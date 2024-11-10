@@ -1,38 +1,51 @@
 # licenta-ide
 
-## Commit style
+## Contribution Practices
 
-I suggest using git cz for consistent and readable commits https://www.npmjs.com/package/git-cz
+### Issues
 
-Use the id of the issue before the commit. e.g: `#632 add search bar functionality` / `#632 fix search bar invisible text` / `#632 add search bar uts`
+- Every task must have an associated issue.
+- Workflow: **Issue → Branch (named after the issue) → Pull Request (PR) → Main branch.**
+- Always work on tasks tied to an issue and its corresponding branch.
 
-## Setting up dev env
+### Commits
 
-Desired output, for increased readability and ease of use:
+- Use [git cz](https://www.npmjs.com/package/git-cz) to ensure consistent and readable commit messages.
+- Start commit messages with the issue ID. For example:
+  - `#632 add search bar functionality`
+  - `#632 fix search bar invisible text`
+  - `#632 add search bar unit tests (UTs)`
+
+## Setting Up the Development Environment
+
+### Desired Output
+
+For increased readability and ease of use:
 
 ![alt text](desired_dev_env_look.png)
 
-### 1. Set .gitconfig with user and password
+### 1. Configure `.gitconfig` with User Details
 
-in `%userprofile%`
+Set up the `.gitconfig` file in `%USERPROFILE%`.
 
-e.g:
+Example configuration:
 
-```[filter "lfs"]
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
-	clean = git-lfs clean -- %f
+```ini
+[filter "lfs"]
+  smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
+  clean = git-lfs clean -- %f
 [user]
-	name = Onisim Roman
-	email = onisimroman@gmail.com
+  name = Onisim Roman
+  email = onisimroman@gmail.com
 ```
 
-### 2. /.prettierrc config
+### 2. Configure .prettierrc
 
-e.g configuration in `%userprofile%/.prettierrc`
+Create a .prettierrc file in %USERPROFILE% with the following configuration:
 
-```
+```ini
 {
   "printWidth": 80,
   "tabWidth": 2,
@@ -50,34 +63,59 @@ e.g configuration in `%userprofile%/.prettierrc`
 }
 ```
 
-#### 2.1. Get the prettier vscode extension
+#### 2.1. Install Prettier Extension for VSCode
 
-https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
+Download the extension from the [VSCode marketplace](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode).
 
 #### 2.2. Set the prettier config globally in vscode
 
-1. open `settings.json` in vscode
+1. Open `settings.json` in VSCode:
 
-- CTRL+P -> `settings.json` in appdata/roaming/code/settings.json
+- Press `CTRL+P` → Search for `settings.json` in `AppData/Roaming/Code/settings.json`.
 
-2. add this setting: `"prettier.configPath": "C:\\Users\\%USERPROFILE%\\.prettierrc",`
+2. add the following setting:
 
-- Change this with your full path of `%USERPROFILE/.prettierrc`
+```json
+"prettier.configPath": "C:\\Users\\%USERPROFILE%\\.prettierrc",
+```
 
-3. I also suggest having `"editor.formatOnSave": true`
+Change this with your full path of `%USERPROFILE/.prettierrc`
+
+3. Enable automatic formatting:
+
+```json
+"editor.formatOnSave": true
+```
 
 ### 3. Set up a pretty terminal (for windows)
 
-1. get powershell 7 (https://github.com/PowerShell/PowerShell)
-2. install oh-my-posh (https://ohmyposh.dev/docs/installation/windows)
-3. set up a font (i currently have MesloLGM Nerd Font)
+#### 3.1. Download and install [powershell 7](https://github.com/PowerShell/PowerShell).
 
-- also set it up in settings.json for vscode
-- add this `"terminal.integrated.fontFamily": "MesloLGM Nerd Font"` with your font
+#### 3.2. Follow the installation guide on [oh-my-posh](https://ohmyposh.dev/docs/installation/windows).
 
-4. set up a theme (personally i enjoy space theme)
+#### 3.3. Set Up a Font
 
-- download the theme from the oh-my-posh page
-- put it in the `%USERPROFILE% folder`
-- in powershell, open the powershell profile: `code $PROFILE` or `notepad $PROFILE` or whatever
-- add this: `oh-my-posh init pwsh --config ~/space.omp.json | Invoke-Expression` and change the filename with your theme filename
+- Install a font such as MesloLGM Nerd Font.
+- Configure the font in `settings.json` for VSCode:
+  ```json
+  "terminal.integrated.fontFamily": "MesloLGM Nerd Font"
+  ```
+
+#### 3.4. Set Up a Theme
+
+1. Choose a theme (e.g., "Space Theme") from the [Oh-My-Posh website](https://ohmyposh.dev).
+2. Download the theme and save it in the `%USERPROFILE%` folder.
+3. Configure PowerShell to use the theme:
+   - Open the PowerShell profile using:
+     ```bash
+     code $PROFILE
+     ```
+     or
+     ```bash
+     notepad $PROFILE
+     ```
+     or whatever else editor you want to use
+   - Add the following line (replace `space.omp.json` with your theme file):
+     ```bash
+     oh-my-posh init pwsh --config ~/space.omp.json | Invoke-Expression
+     ```
