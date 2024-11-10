@@ -16,7 +16,7 @@
   - `#632 fix search bar invisible text`
   - `#632 add search bar unit tests (UTs)`
 
-## Setting Up the Development Environment
+## Setting Up the Development Environment (Windows)
 
 ### Desired Output
 
