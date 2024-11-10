@@ -1,6 +1,12 @@
 {
   "devDependencies": {
-    "git-cz": "^4.9.0"
+    "@types/electron": "^1.4.38",
+    "@types/node": "^22.9.0",
+    "electron": "^33.2.0",
+    "electron-reload": "^2.0.0-alpha.1",
+    "git-cz": "^4.9.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
   },
   "config": {
     "commitizen": {
@@ -10,8 +16,10 @@
   "name": "licenta-ide",
   "version": "1.0.0",
   "description": "Idea: **_Code Editor with Electron and TypeScript_**",
-  "main": "main.ts",
+  "main": "./dist/main.js",
   "scripts": {
+    "start": "tsc && electron .",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Onisim Roman",
