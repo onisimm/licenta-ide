@@ -1,10 +1,20 @@
 # licenta-ide
 
+## Commit style
+
+I suggest using git cz for consistent and readable commits https://www.npmjs.com/package/git-cz
+
+Use the id of the issue before the commit. e.g: `#632 add search bar functionality` / `#632 fix search bar invisible text` / `#632 add search bar uts`
+
 ## Setting up dev env
 
-in %userprofile%
+Desired output, for increased readability and ease of use:
+
+![alt text](desired_dev_env_look.png)
 
 ### 1. Set .gitconfig with user and password
+
+in `%userprofile%`
 
 e.g:
 
@@ -20,7 +30,7 @@ e.g:
 
 ### 2. /.prettierrc config
 
-e.g configuration in %userprofile%/.prettierrc
+e.g configuration in `%userprofile%/.prettierrc`
 
 ```
 {
@@ -46,13 +56,15 @@ https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
 
 #### 2.2. Set the prettier config globally in vscode
 
-1. open settings.json in vscode
+1. open `settings.json` in vscode
 
-- CTRL+P -> settings.json in appdata/roaming/code/settings.json
+- CTRL+P -> `settings.json` in appdata/roaming/code/settings.json
 
 2. add this setting: `"prettier.configPath": "C:\\Users\\%USERPROFILE%\\.prettierrc",`
 
-- Change this with your full path of %USERPROFILE/.prettierrc
+- Change this with your full path of `%USERPROFILE/.prettierrc`
+
+3. I also suggest having `"editor.formatOnSave": true`
 
 ### 3. Set up a pretty terminal (for windows)
 
@@ -66,6 +78,6 @@ https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
 4. set up a theme (personally i enjoy space theme)
 
 - download the theme from the oh-my-posh page
-- put it in the %USERPROFILE% folder
+- put it in the `%USERPROFILE% folder`
 - in powershell, open the powershell profile: `code $PROFILE` or `notepad $PROFILE` or whatever
 - add this: `oh-my-posh init pwsh --config ~/space.omp.json | Invoke-Expression` and change the filename with your theme filename
