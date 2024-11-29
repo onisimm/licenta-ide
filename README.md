@@ -38,6 +38,11 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
    git clone https://github.com/onisimm/licenta-ide
    ```
 
+### Running the project
+
+Open the terminal and run
+```npm start```
+
 ## Contribution Practices
 
 ### Issues
