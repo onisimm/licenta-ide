@@ -40,7 +40,7 @@ const styles: Record<string, SxProps<Theme>> = {
   bodyContainer: {
     display: 'grid',
     gridTemplateAreas: '"main sidebar"',
-    gridTemplateColumns: '1fr 20vw',
+    gridTemplateColumns: '1fr 260px',
     overflow: 'hidden',
   },
 

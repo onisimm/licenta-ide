@@ -2,7 +2,7 @@ import palette from '../../theme/palette';
 import { IconProps } from '../types/icon';
 
 export function ExtensionIcon({
-  size = 26,
+  size = 24,
   color = palette.grey[100],
   props,
 }: IconProps) {

@@ -2,7 +2,7 @@ import { IconProps } from '../types/icon';
 import palette from '../../theme/palette';
 
 export default function FilesIcon({
-  size = 26,
+  size = 24,
   color = palette.grey[100],
   props,
 }: IconProps) {
