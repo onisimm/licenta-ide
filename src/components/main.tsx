@@ -1,8 +1,8 @@
+import { Typography } from '@mui/material';
 import { memo } from 'react';
 
 const MainComponent = memo((props: any) => {
-  console.log('MainComponent called');
-  return <div className="wrapper-component">Hello</div>;
+  return <Typography variant="h1">Hello</Typography>;
 });
 
 export default MainComponent;

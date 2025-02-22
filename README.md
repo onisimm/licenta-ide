@@ -29,7 +29,7 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
 
 ### Prerequisites
 
-- **Node.js (v18.8.0)** and **npm/yarn**
+- **Node.js (v18.8.0 or higher, up to 22.14.0)** and **npm/yarn**
 
 ### Installation
 
