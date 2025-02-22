@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { Box, SxProps, Theme } from '@mui/material';
 
-import ContentSection from './sections/contentSection';
-import SidebarSection from './sections/sidebarSection';
+import ContentSection from './sections/content';
+import SidebarSection from './sections/sidebar';
 
 const MainComponent = memo((props: any) => {
   return (

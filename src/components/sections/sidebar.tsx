@@ -1,17 +1,13 @@
 import { memo } from 'react';
 import { Box, SxProps, Theme } from '@mui/material';
+import IconList from '../sidebar/icon-list';
 
 const SidebarSection = memo((props: any) => {
   return (
     <Box sx={styles.sidebarContainer}>
-      <Box
-        sx={[styles.sidebarComponent, styles.explorerList] as SxProps<Theme>}>
-        Explorer List
-      </Box>
+      <Box sx={styles.explorerList}>Explorer List</Box>
 
-      <Box sx={[styles.sidebarComponent, styles.iconList] as SxProps<Theme>}>
-        Icon List
-      </Box>
+      <IconList />
     </Box>
   );
 });
@@ -24,17 +20,8 @@ const styles: Record<string, SxProps<Theme>> = {
     display: 'flex', // flex direction Row by default
     flexWrap: 'nowrap',
   },
-  sidebarComponent: {
-    height: '100%',
-  },
-  iconList: {
-    width: '40px',
-    backgroundColor: 'primary.dark',
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-  },
   explorerList: {
+    height: '100%',
     flex: 1,
   },
 };
