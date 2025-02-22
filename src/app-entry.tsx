@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { store } from './shared/store';
 import App from './app';
 import { ThemeProvider } from '@mui/material/';
-import theme from './theme';
+import theme from './theme/theme';
 
 // Create a root instance
 const root = createRoot(document.getElementById('root'));
