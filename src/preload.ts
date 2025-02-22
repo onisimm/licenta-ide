@@ -1,6 +1,2 @@
-// Expose APIs to the renderer process securely
-import { contextBridge } from 'electron';
-
-contextBridge.exposeInMainWorld('myAPI', {
-  sayHello: () => 'Hello from preload script!',
-});
+// See the Electron documentation for details on how to use preload scripts:
+// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
