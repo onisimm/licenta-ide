@@ -2,12 +2,14 @@ import { Box, SxProps, Theme } from '@mui/material';
 
 import FilesIcon from '../icons/files';
 import SearchIcon from '../icons/search';
+import SourceIcon from '../icons/source';
 
 function IconList() {
   return (
     <Box sx={styles.iconList}>
       <FilesIcon />
       <SearchIcon />
+      <SourceIcon />
     </Box>
   );
 }
