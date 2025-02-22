@@ -1,1 +1,1 @@
-console.log(window.myAPI.sayHello());
+import './app-entry';
