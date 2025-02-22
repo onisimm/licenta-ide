@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { store } from './shared/store';
 import App from './app';
-import { ThemeProvider } from '@mui/material/';
+import { CssBaseline, ThemeProvider } from '@mui/material/';
 import theme from './theme/theme';
 
 // Create a root instance
@@ -12,6 +12,7 @@ console.log('inside app entry');
 
 root.render(
   <ThemeProvider theme={theme}>
+    <CssBaseline /> {/* apply CSS override from theme.ts */}
     <Provider store={store}>
       <App />
     </Provider>
