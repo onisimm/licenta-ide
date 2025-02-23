@@ -1,10 +1,5 @@
 import { IconProps } from '../types/icon';
-import { styled } from '@mui/material';
-
-const StyledSVG = styled('svg')(({ theme, color }) => ({
-  fill: color || theme.palette.sidebar.icon,
-  transition: 'all 0.2s ease-in-out',
-}));
+import { StyledSVG } from './styled-svg';
 
 export default function FilesIcon({ size = 24, color, props }: IconProps) {
   return (

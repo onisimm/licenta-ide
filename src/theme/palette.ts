@@ -49,8 +49,8 @@ export const darkPalette: PaletteOptions = {
   divider: '#2b2b2b',
   sidebar: {
     text: '#cccccc',
-    icon: '#a5a5a5',
-    iconActive: '#d7d7d7',
+    icon: '#9e9e9e',
+    iconActive: '#fafafa',
   },
   border: {
     main: '#2b2b2b',

@@ -1,9 +1,5 @@
-import { styled } from '@mui/material';
 import { IconProps } from '../types/icon';
-
-const StyledSVG = styled('svg')(({ theme }) => ({
-  fill: theme.palette.sidebar.icon,
-}));
+import { StyledSVG } from './styled-svg';
 
 export default function SearchIcon({ size = 26, color, ...props }: IconProps) {
   return (
