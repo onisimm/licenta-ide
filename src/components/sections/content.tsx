@@ -1,20 +1,23 @@
 import { memo } from 'react';
-import { Box, SxProps, Theme, Typography } from '@mui/material';
+import { Box, Typography, styled } from '@mui/material';
 
-const ContentSection = memo((props: any) => {
+const ContentContainer = styled(Box)(({ theme }) => ({
+  gridArea: 'main',
+  backgroundColor: theme.palette.background.paper,
+  padding: theme.spacing(2),
+  overflow: 'hidden',
+}));
+
+const ContentText = styled(Typography)(({ theme }) => ({
+  color: theme.palette.text.primary,
+}));
+
+const ContentSection = memo(() => {
   return (
-    <Box sx={styles.contentSection}>
-      <Typography variant="h4">Body</Typography>
-    </Box>
+    <ContentContainer>
+      <ContentText variant="h4">Body</ContentText>
+    </ContentContainer>
   );
 });
-
-const styles: Record<string, SxProps<Theme>> = {
-  contentSection: {
-    gridArea: 'main',
-    backgroundColor: 'grey.200',
-    overflow: 'hidden',
-  },
-};
 
 export default ContentSection;

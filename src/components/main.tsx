@@ -1,52 +1,42 @@
 import { memo } from 'react';
-import { Box, SxProps, Theme } from '@mui/material';
-
+import { Box, styled } from '@mui/material';
 import ContentSection from './sections/content';
 import SidebarSection from './sections/sidebar';
 
-const MainComponent = memo((props: any) => {
-  return (
-    // Main container
-    <Box sx={styles.mainContainer}>
-      {/* Header */}
-      <Box sx={styles.headerContainer}></Box>
-
-      {/* Body */}
-      <Box sx={styles.bodyContainer}>
-        <ContentSection />
-        <SidebarSection />
-      </Box>
-
-      {/* Footer */}
-      <Box sx={styles.footerContainer}></Box>
-    </Box>
-  );
+const MainContainer = styled(Box)({
+  display: 'grid',
+  gridTemplateRows: '35px 1fr 20px',
+  height: '100vh',
 });
 
-const styles: Record<string, SxProps<Theme>> = {
-  mainContainer: {
-    display: 'grid',
-    gridTemplateRows: '35px 1fr 20px',
-    height: '100vh',
-    padding: '0px',
-    margin: '0px',
-  },
+const HeaderContainer = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+  WebkitAppRegion: 'drag',
+}));
 
-  headerContainer: {
-    backgroundColor: 'primary.main',
-    WebkitAppRegion: 'drag', // make window draggable by clicking on the header
-  },
+const BodyContainer = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  gridTemplateAreas: '"main sidebar"',
+  gridTemplateColumns: '1fr 260px',
+  overflow: 'hidden',
+  backgroundColor: theme.palette.background.default,
+}));
 
-  bodyContainer: {
-    display: 'grid',
-    gridTemplateAreas: '"main sidebar"',
-    gridTemplateColumns: '1fr 260px',
-    overflow: 'hidden',
-  },
+const FooterContainer = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.primary.main,
+}));
 
-  footerContainer: {
-    backgroundColor: 'primary.main',
-  },
-};
+const MainComponent = memo(() => {
+  return (
+    <MainContainer>
+      <HeaderContainer />
+      <BodyContainer>
+        <ContentSection />
+        <SidebarSection />
+      </BodyContainer>
+      <FooterContainer />
+    </MainContainer>
+  );
+});
 
 export default MainComponent;

@@ -1,29 +1,30 @@
 import { memo } from 'react';
-import { Box, SxProps, Theme } from '@mui/material';
+import { Box, styled } from '@mui/material';
 import IconList from '../sidebar/icon-list';
 
-const SidebarSection = memo((props: any) => {
-  return (
-    <Box sx={styles.sidebarContainer}>
-      <Box sx={styles.explorerList}>Explorer List</Box>
+const SidebarContainer = styled(Box)(({ theme }) => ({
+  gridArea: 'sidebar',
+  backgroundColor: theme.palette.background.paper,
+  overflow: 'hidden',
+  display: 'flex',
+  flexWrap: 'nowrap',
+}));
 
+const ExplorerList = styled(Box)(({ theme }) => ({
+  height: '100%',
+  flex: 1,
+  color: theme.palette.text.primary,
+  padding: theme.spacing(2),
+  border: `1px solid ${theme.palette.border.main}`,
+}));
+
+const SidebarSection = memo(() => {
+  return (
+    <SidebarContainer>
+      <ExplorerList>Explorer List</ExplorerList>
       <IconList />
-    </Box>
+    </SidebarContainer>
   );
 });
-
-const styles: Record<string, SxProps<Theme>> = {
-  sidebarContainer: {
-    gridArea: 'sidebar',
-    backgroundColor: 'primary.light',
-    overflow: 'hidden',
-    display: 'flex', // flex direction Row by default
-    flexWrap: 'nowrap',
-  },
-  explorerList: {
-    height: '100%',
-    flex: 1,
-  },
-};
 
 export default SidebarSection;
