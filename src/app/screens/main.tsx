@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Box, styled } from '@mui/material';
-import ContentSection from '../sections/main/content';
-import SidebarSection from '../sections/main/sidebar';
+import ContentSection from '../sections/content';
+import SidebarSection from '../sections/sidebar';
 
 const MainContainer = styled(Box)({
   display: 'grid',
