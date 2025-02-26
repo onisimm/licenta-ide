@@ -2,7 +2,7 @@ import { IconProps } from '../types/icon';
 import { StyledSVG } from './styled-svg';
 
 export default function SettingsIcon({
-  size = 28,
+  size = 25,
   color,
   ...props
 }: IconProps) {
@@ -11,7 +11,7 @@ export default function SettingsIcon({
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox="0 0 22 22"
       style={{ fill: color }}
       {...props}>
       <path

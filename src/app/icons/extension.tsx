@@ -1,7 +1,7 @@
 import { IconProps } from '../types/icon';
 import { StyledSVG } from './styled-svg';
 
-export function ExtensionIcon({ size = 24, color, ...props }: IconProps) {
+export function ExtensionIcon({ size = 25, color, ...props }: IconProps) {
   return (
     <StyledSVG
       xmlns="http://www.w3.org/2000/svg"

@@ -34,13 +34,25 @@ const IconListContainer = styled(Box)(({ theme }) => ({
 const SidebarSection = memo(() => {
   const [activeIcon, setActiveIcon] = useState(IconListName.files);
 
+  const onIconClick = (name: IconListName) => {
+    setActiveIcon(name);
+  };
+
   return (
     <SidebarContainer>
       <ExplorerList>Explorer List</ExplorerList>
 
       <IconListContainer>
-        <IconList icons={topIcons} active={activeIcon} />
-        <IconList icons={bottomIcons} active={activeIcon} />
+        <IconList
+          icons={topIcons}
+          active={activeIcon}
+          onIconClick={onIconClick}
+        />
+        <IconList
+          icons={bottomIcons}
+          active={activeIcon}
+          onIconClick={onIconClick}
+        />
       </IconListContainer>
     </SidebarContainer>
   );

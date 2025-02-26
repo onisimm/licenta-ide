@@ -1,13 +1,13 @@
 import { IconProps } from '../types/icon';
 import { StyledSVG } from './styled-svg';
 
-export default function SourceIcon({ size = 26, color, ...props }: IconProps) {
+export default function SourceIcon({ size = 25, color, ...props }: IconProps) {
   return (
     <StyledSVG
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox="0 0 23 24"
       style={{ fill: color }}
       {...props}>
       <path
