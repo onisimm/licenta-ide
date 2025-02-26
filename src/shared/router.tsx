@@ -1,5 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
-import MainComponent from '../components/main';
+import MainComponent from '../app/screens/main';
 
 export default createBrowserRouter([
   {

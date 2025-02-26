@@ -32,23 +32,31 @@ declare module '@mui/material/styles' {
       blue?: string;
     };
   }
+
+  interface Theme {
+    size: (multiplier: number) => string;
+  }
+
+  interface ThemeOptions {
+    size?: (multiplier: number) => string;
+  }
 }
 
 // ===========================|| THEMES ||=========================== //
 
-export const lightTheme = createTheme({
+const generalTheme = createTheme({
   typography: {
     fontFamily: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`,
   },
-  palette: lightPalette,
   components: components,
+  size: (multiplier: number) => `${multiplier * 8}px`,
+});
+
+export const lightTheme = createTheme(generalTheme, {
+  palette: lightPalette,
 });
 
 // Create the Dark Theme
-export const darkTheme = createTheme({
-  typography: {
-    fontFamily: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`,
-  },
+export const darkTheme = createTheme(generalTheme, {
   palette: darkPalette,
-  components: components,
 });

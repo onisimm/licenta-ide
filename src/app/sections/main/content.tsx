@@ -3,7 +3,7 @@ import { Box, Typography, styled } from '@mui/material';
 
 const ContentContainer = styled(Box)(({ theme }) => ({
   gridArea: 'main',
-  backgroundColor: theme.palette.background.paper,
+  backgroundColor: theme.palette.background.main,
   padding: theme.spacing(2),
   overflow: 'hidden',
 }));

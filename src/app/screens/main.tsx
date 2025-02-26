@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Box, styled } from '@mui/material';
-import ContentSection from './sections/content';
-import SidebarSection from './sections/sidebar';
+import ContentSection from '../sections/main/content';
+import SidebarSection from '../sections/main/sidebar';
 
 const MainContainer = styled(Box)({
   display: 'grid',
@@ -10,7 +10,7 @@ const MainContainer = styled(Box)({
 });
 
 const HeaderContainer = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+  background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
   WebkitAppRegion: 'drag',
 }));
 

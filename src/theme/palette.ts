@@ -3,10 +3,12 @@ import { PaletteOptions } from '@mui/material/styles';
 export const lightPalette: PaletteOptions = {
   mode: 'light',
   primary: {
-    main: '#0078d4',
+    main: '#004d96',
+    light: '#005cb3',
   },
   secondary: {
-    main: '#0074cc',
+    main: '#0078d4',
+    light: '#0085eb',
   },
   background: {
     default: '#ffffff',
@@ -33,14 +35,16 @@ export const lightPalette: PaletteOptions = {
 export const darkPalette: PaletteOptions = {
   mode: 'dark',
   primary: {
-    main: '#0078d4',
+    main: '#004d96',
+    light: '#005cb3',
   },
   secondary: {
-    main: '#2b5797',
+    main: '#0078d4',
+    light: '#0085eb',
   },
   background: {
-    default: '#1e1e1e',
-    paper: '#37373c',
+    default: '#0d1117',
+    paper: '#222222',
   },
   text: {
     primary: '#fafafa',
@@ -49,8 +53,8 @@ export const darkPalette: PaletteOptions = {
   divider: '#2b2b2b',
   sidebar: {
     text: '#cccccc',
-    icon: '#9e9e9e',
-    iconActive: '#fafafa',
+    icon: '#fafafa',
+    iconActive: '#ff82a1',
   },
   border: {
     main: '#2b2b2b',
