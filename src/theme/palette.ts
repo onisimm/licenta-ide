@@ -1,36 +1,65 @@
-import { PaletteOptions } from '@mui/material';
+import { PaletteOptions } from '@mui/material/styles';
 
-const palette: PaletteOptions = {
+export const lightPalette: PaletteOptions = {
+  mode: 'light',
   primary: {
-    main: '#1976d2',
+    main: '#004d96',
+    light: '#005cb3',
   },
   secondary: {
-    main: '#dc004e',
+    main: '#0078d4',
+    light: '#0085eb',
   },
-  error: {
-    main: '#f44336',
+  background: {
+    default: '#ffffff',
+    paper: '#f5f5f5',
   },
-  warning: {
-    main: '#ff9800',
+  text: {
+    primary: '#212121',
+    secondary: '#616161',
   },
-  info: {
-    main: '#2196f3',
+  divider: '#e0e0e0',
+  sidebar: {
+    text: '#333333',
+    icon: '#757575',
+    iconActive: '#212121',
   },
-  success: {
-    main: '#4caf50',
+  border: {
+    main: '#e0e0e0',
   },
-  grey: {
-    50: '#fafafa',
-    100: '#f5f5f5',
-    200: '#eeeeee',
-    300: '#e0e0e0',
-    400: '#bdbdbd',
-    500: '#9e9e9e',
-    600: '#757575',
-    700: '#616161',
-    800: '#424242',
-    900: '#212121',
+  easy: {
+    blue: '#0078d4',
   },
 };
 
-export default palette;
+export const darkPalette: PaletteOptions = {
+  mode: 'dark',
+  primary: {
+    main: '#004d96',
+    light: '#005cb3',
+  },
+  secondary: {
+    main: '#0078d4',
+    light: '#0085eb',
+  },
+  background: {
+    default: '#0d1117',
+    paper: '#222222',
+  },
+  text: {
+    primary: '#fafafa',
+    secondary: '#cccccc',
+  },
+  divider: '#2b2b2b',
+  sidebar: {
+    text: '#cccccc',
+    icon: '#fafafa',
+    iconActive: '#ff82a1',
+  },
+  border: {
+    main: '#2b2b2b',
+  },
+  easy: {
+    blue: '#0078d4',
+  },
+};
