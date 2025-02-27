@@ -1,5 +1,6 @@
 import { Box, styled, Tooltip } from '@mui/material';
 import { IconListName, IconType } from '../types/icon';
+import Icon from './icon';
 
 interface IconListProps {
   icons: IconType[];
@@ -14,52 +15,19 @@ const IconContainer = styled(Box)(({ theme }) => ({
   alignItems: 'center',
 }));
 
-const IconWrapper = styled(Box)<{ active: boolean }>(({ theme, active }) => ({
-  padding: theme.spacing(1.25),
-  cursor: 'pointer',
-  opacity: 0.6,
-
-  paddingRight: active ? theme.spacing(1) : theme.spacing(1.25),
-
-  '&:hover': {
-    opacity: 1,
-  },
-}));
-
-const ActiveHighlight = styled(Box)(({ theme }) => ({
-  width: theme.size(0.25),
-  height: '100%',
-  backgroundColor: theme.palette.sidebar.iconActive,
-  zIndex: 1,
-}));
-
-const IconRow = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'flex-end',
-}));
-
 function IconList({ icons, active, onIconClick }: IconListProps) {
+  console.log('IconList:', icons, active);
   return (
     <IconContainer>
       {icons.map(({ name, icon, description }) => (
-        <Tooltip
+        <Icon
           key={name}
-          title={description}
-          placement="right"
-          arrow
-          enterDelay={0}
-          leaveDelay={0}
-          disableInteractive>
-          <IconRow>
-            <IconWrapper
-              key={name}
-              active={name === active}
-              onClick={() => onIconClick && onIconClick(name)}>
-              {icon}
-            </IconWrapper>
-            {name === active && <ActiveHighlight />}
-          </IconRow>
-        </Tooltip>
+          name={name}
+          icon={icon}
+          description={description}
+          onClick={() => onIconClick && onIconClick(name)}
+          active={!!(active === name)}
+        />
       ))}
     </IconContainer>
   );

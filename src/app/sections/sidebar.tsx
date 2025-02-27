@@ -1,10 +1,17 @@
 import { memo, useState } from 'react';
 import { Box, styled } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import IconList from '../components/icon-list';
 import { IconListName } from '../types/icon';
 import { topIcons, bottomIcons } from '../config/icons';
-import { ExplorerSection } from './explorer';
+
+const ExplorerContainer = styled(Box)(({ theme }) => ({
+  height: '100%',
+  flex: 1,
+  color: theme.palette.text.primary,
+  padding: theme.spacing(2),
+  borderLeft: `1px solid ${theme.palette.border.main}`,
+}));
 
 const SidebarContainer = styled(Box)(({ theme }) => ({
   gridArea: 'sidebar',
@@ -27,23 +34,17 @@ const IconListContainer = styled(Box)(({ theme }) => ({
 
 const SidebarSection = memo(() => {
   const [activeIcon, setActiveIcon] = useState(IconListName.files);
-  const navigate = useNavigate();
 
   const onIconClick = (name: IconListName) => {
+    console.log('Icon clicked:', name);
     setActiveIcon(name);
-
-    switch (name) {
-      case IconListName.files:
-        navigate('/main_window/explorer');
-        break;
-      default:
-        break;
-    }
   };
 
   return (
     <SidebarContainer>
-      <ExplorerSection />
+      <ExplorerContainer>
+        <Outlet />
+      </ExplorerContainer>
 
       <IconListContainer>
         <IconList
