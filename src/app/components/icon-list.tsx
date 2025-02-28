@@ -16,7 +16,6 @@ const IconContainer = styled(Box)(({ theme }) => ({
 }));
 
 function IconList({ icons, active, onIconClick }: IconListProps) {
-  console.log('IconList:', icons, active);
   return (
     <IconContainer>
       {icons.map(({ name, icon, description }) => (

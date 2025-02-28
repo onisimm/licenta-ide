@@ -36,7 +36,6 @@ const SidebarSection = memo(() => {
   const [activeIcon, setActiveIcon] = useState(IconListName.files);
 
   const onIconClick = (name: IconListName) => {
-    console.log('Icon clicked:', name);
     setActiveIcon(name);
   };
 

@@ -53,6 +53,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^10.0.0",
     "electron-winstaller": "^5.4.0",
+    "fs": "^0.0.1-security",
     "monaco-editor": "^0.50.0",
     "monaco-editor-webpack-plugin": "^7.1.0",
     "react": "^18.3.1",

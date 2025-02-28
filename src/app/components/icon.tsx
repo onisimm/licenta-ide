@@ -14,8 +14,8 @@ const IconWrapper = styled(Box, {
 })<{ active: boolean }>(({ theme, active }) => ({
   padding: theme.spacing(1.25),
   cursor: 'pointer',
-  opacity: 0.6,
 
+  opacity: active ? 1 : 0.6,
   paddingRight: active ? theme.spacing(1) : theme.spacing(1.25),
 
   '&:hover': {
@@ -43,8 +43,6 @@ export default function Icon({
   active = false,
 }: IconProps) {
   let linkHref = '/main_window/' + name;
-
-  console.log('Icon:', name, active);
 
   return (
     <Tooltip

@@ -11,3 +11,7 @@ export type TFolderTree = {
   children?: TFolderTree[];
   isDirectory: boolean;
 };
+
+export interface IMainState {
+  folderStructure: IFolderStructure;
+}
