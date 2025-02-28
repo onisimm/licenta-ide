@@ -29,7 +29,7 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
 
 ### Prerequisites
 
-- **Node.js (v18.8.0 or higher, up to 22.14.0)** and **npm/yarn**
+- **Node.js (v22.14.0 or higher, up to 22.14.0)** and **npm/yarn**
 
 ### Installation
 
@@ -40,8 +40,7 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
 
 ### Running the project
 
-Open the terminal and run
-```npm start```
+Open the terminal and run `npm start`
 
 ## Contribution Practices
 

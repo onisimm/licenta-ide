@@ -52,6 +52,7 @@
     "@types/react-redux": "^7.1.33",
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^10.0.0",
+    "electron-winstaller": "^5.4.0",
     "monaco-editor": "^0.50.0",
     "monaco-editor-webpack-plugin": "^7.1.0",
     "react": "^18.3.1",
