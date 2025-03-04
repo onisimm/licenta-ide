@@ -47,7 +47,7 @@ const createWindow = () => {
       properties: ['openDirectory'],
     });
 
-    console.log('folder in get-folder: ', folder.filePaths[0]);
+    if (folder.canceled) return; // If the user canceled the folder select, we just return void
 
     const tree = get_files(folder.filePaths[0]);
     const structure = {
