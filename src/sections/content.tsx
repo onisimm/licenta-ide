@@ -1,7 +1,8 @@
 import { memo, useCallback } from 'react';
 import { Box, styled } from '@mui/material';
-import { useAppDispatch } from '../../shared/hooks';
-import { setFolderStructure } from '../../shared/rdx-slice';
+import { useAppDispatch, useAppSelector } from '../shared/hooks';
+import { setFolderStructure } from '../shared/rdx-slice';
+import { IFolderStructure } from '../shared/types';
 
 const ContentContainer = styled(Box)(({ theme }) => ({
   gridArea: 'main',
@@ -37,18 +38,21 @@ const DefaultSectionButton = styled('button')(({ theme }) => ({
 
 const ContentSection = memo(() => {
   const dispatch = useAppDispatch();
+  const folder_structure = useAppSelector(state => state.main.folderStructure);
 
   const handleOpenFolder = useCallback(async () => {
-    const folder = await window.electron.openFolder();
+    const folder: IFolderStructure = await window.electron.openFolder();
     dispatch(setFolderStructure(folder));
   }, []);
 
   return (
     <ContentContainer>
       <DefaultSection>
-        <DefaultSectionButton onClick={handleOpenFolder}>
-          Open Directory
-        </DefaultSectionButton>
+        {folder_structure && Object.keys(folder_structure).length == 0 && (
+          <DefaultSectionButton onClick={handleOpenFolder}>
+            Open Directory
+          </DefaultSectionButton>
+        )}
       </DefaultSection>
     </ContentContainer>
   );

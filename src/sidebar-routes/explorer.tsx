@@ -11,3 +11,7 @@ const ExplorerContainer = styled(Box)(({ theme }) => ({
 export const ExplorerSection = memo(() => {
   return <ExplorerContainer>Explorer Section</ExplorerContainer>;
 });
+
+export const EmptySection = memo(() => {
+  return <ExplorerContainer>Nothing</ExplorerContainer>;
+});

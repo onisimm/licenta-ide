@@ -1,6 +1,6 @@
 import { createHashRouter, Navigate } from 'react-router-dom';
-import MainComponent from '../app/screens/main';
-import { ExplorerSection } from '../app/sidebar-routes/explorer';
+import MainComponent from '../screens/main';
+import { EmptySection, ExplorerSection } from '../sidebar-routes/explorer';
 
 export default createHashRouter([
   {
@@ -22,23 +22,23 @@ export default createHashRouter([
       },
       {
         path: 'search',
-        element: <ExplorerSection />,
+        element: <EmptySection />,
       },
       {
         path: 'source',
-        element: <ExplorerSection />,
+        element: <EmptySection />,
       },
       {
         path: 'extension',
-        element: <ExplorerSection />,
+        element: <EmptySection />,
       },
       {
         path: 'profile',
-        element: <ExplorerSection />,
+        element: <EmptySection />,
       },
       {
         path: 'settings',
-        element: <ExplorerSection />,
+        element: <EmptySection />,
       },
     ],
   },

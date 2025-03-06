@@ -43,6 +43,11 @@ const createWindow = () => {
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   ipcMain.handle('get-folder', async () => {
+    // @ts-ignore
+    return store.get(SELECTED_FOLDER_STORE_NAME);
+  });
+
+  ipcMain.handle('open-folder', async () => {
     const folder = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory'],
     });
@@ -73,8 +78,6 @@ const createWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
-
-  console.log('inside index ts');
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
