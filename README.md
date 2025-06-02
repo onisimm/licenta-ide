@@ -29,7 +29,7 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
 
 ### Prerequisites
 
-- **Node.js (v18.8.0 or higher, up to 22.14.0)** and **npm/yarn**
+- **Node.js (v22.14.0 or higher, up to 22.14.0)** and **npm/yarn**
 
 ### Installation
 
@@ -37,6 +37,10 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
    ```bash
    git clone https://github.com/onisimm/licenta-ide
    ```
+
+### Running the project
+
+Open the terminal and run `npm start`
 
 ## Contribution Practices
 
