@@ -61,7 +61,7 @@ const ExpandIcon = styled(Box)<{
   '&::before': {
     content: isDirectory ? '"▶"' : '""',
     fontSize: '10px',
-    color: hasPreloadedChildren ? '#4CAF50' : '#8e8e8e', // Green if pre-loaded, gray if needs loading
+    color: '#8e8e8e',
   },
 }));
 
