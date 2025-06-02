@@ -1,7 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Box, styled, Typography, CircularProgress } from '@mui/material';
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
+import { useAppDispatch } from '../shared/hooks';
+import { setLoadingFile, setSelectedFile } from '../shared/rdx-slice';
+import { getErrorMessage, logError, normalizeError } from '../shared/utils';
 
 interface FileTreeProps {
   items: TFolderTree[];
@@ -118,7 +121,8 @@ const FileItem: React.FC<FileItemProps> = ({
           isLoading: false,
         });
       } catch (error) {
-        console.error('Error loading directory children:', error);
+        logError('Directory loading', error);
+
         onUpdateItem?.(item.path, {
           children: [],
           childrenLoaded: true,
@@ -189,7 +193,34 @@ export const FileTree: React.FC<FileTreeProps> = ({
   level = 0,
   onUpdateItem,
 }) => {
+  const dispatch = useAppDispatch();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Add error handling for this component
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection in FileTree:', event.reason);
+      logError('FileTree Promise Rejection', event.reason);
+      event.preventDefault();
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error('Error in FileTree:', event.error);
+      logError('FileTree Error', event.error || event.message);
+      event.preventDefault();
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection,
+      );
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
 
   // Use useMemo to prevent unnecessary re-creation of tree items
   const treeItems = useMemo(() => items, [items]);
@@ -216,10 +247,61 @@ export const FileTree: React.FC<FileTreeProps> = ({
     [onUpdateItem],
   );
 
-  const handleFileClick = useCallback((item: TFolderTree) => {
-    console.log('File clicked:', item.path);
-    // TODO: Open file in editor
-  }, []);
+  const handleFileClick = useCallback(
+    async (item: TFolderTree) => {
+      // Wrap the entire function in a try-catch to prevent any errors from escaping
+      try {
+        if (item.isDirectory) return;
+
+        console.log('File clicked:', item.path);
+
+        // Set loading state
+        dispatch(setLoadingFile(true));
+
+        // Add a small delay to ensure state is updated
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        try {
+          // Read file content with error handling
+          const fileData = await Promise.resolve(
+            window.electron.readFile(item.path),
+          ).catch(error => {
+            // Catch any IPC or file reading errors
+            logError('IPC file reading', error);
+            throw normalizeError(error);
+          });
+
+          console.log('File data:', fileData);
+
+          // Validate file data
+          if (!fileData || typeof fileData.content !== 'string') {
+            throw new Error('Invalid file data received');
+          }
+
+          // Update selected file in Redux
+          dispatch(setSelectedFile(fileData));
+        } catch (fileError) {
+          // Handle file reading errors
+          logError('File loading', fileError);
+          dispatch(setLoadingFile(false));
+
+          // Show error notification to user
+          const errorMessage = getErrorMessage(fileError);
+          alert(`Error loading file: ${errorMessage}`);
+        }
+      } catch (globalError) {
+        // Catch any other errors that might escape
+        logError('File click handler', globalError);
+        dispatch(setLoadingFile(false));
+
+        // Show error notification
+        const errorMessage = getErrorMessage(globalError);
+        console.error('Global file click error:', errorMessage);
+        alert(`Unexpected error: ${errorMessage}`);
+      }
+    },
+    [dispatch],
+  );
 
   if (!treeItems || treeItems.length === 0) {
     return null;

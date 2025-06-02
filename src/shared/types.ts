@@ -14,6 +14,15 @@ export type TFolderTree = {
   childrenLoaded?: boolean;
 };
 
+export interface ISelectedFile {
+  path: string;
+  name: string;
+  content: string;
+  language: string;
+}
+
 export interface IMainState {
   folderStructure: IFolderStructure;
+  selectedFile: ISelectedFile | null;
+  isLoadingFile: boolean;
 }

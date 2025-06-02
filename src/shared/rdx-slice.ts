@@ -1,10 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { IFolderStructure, IMainState, TFolderTree } from './types';
+import {
+  IFolderStructure,
+  IMainState,
+  TFolderTree,
+  ISelectedFile,
+} from './types';
 
 // Define the initial state using that type
 const initialState: IMainState = {
   folderStructure: {} as IFolderStructure,
+  selectedFile: null,
+  isLoadingFile: false,
 };
 
 // Helper function to update tree items recursively
@@ -34,6 +41,8 @@ export const mainSlice = createSlice({
   reducers: {
     setFolderStructure: (state, action: PayloadAction<IFolderStructure>) => {
       state.folderStructure = action.payload;
+      // Clear selected file when folder changes
+      state.selectedFile = null;
     },
     updateTreeItem: (
       state,
@@ -48,9 +57,26 @@ export const mainSlice = createSlice({
         );
       }
     },
+    setLoadingFile: (state, action: PayloadAction<boolean>) => {
+      state.isLoadingFile = action.payload;
+    },
+    setSelectedFile: (state, action: PayloadAction<ISelectedFile>) => {
+      state.selectedFile = action.payload;
+      state.isLoadingFile = false;
+    },
+    clearSelectedFile: state => {
+      state.selectedFile = null;
+      state.isLoadingFile = false;
+    },
   },
 });
 
-export const { setFolderStructure, updateTreeItem } = mainSlice.actions;
+export const {
+  setFolderStructure,
+  updateTreeItem,
+  setLoadingFile,
+  setSelectedFile,
+  clearSelectedFile,
+} = mainSlice.actions;
 
 export default mainSlice.reducer;

@@ -49,6 +49,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@monaco-editor/react": "^4.7.0",
     "@mui/material": "^6.4.11",
     "@reduxjs/toolkit": "^2.8.2",
     "@svgr/webpack": "^8.1.0",

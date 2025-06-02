@@ -80,7 +80,16 @@ ipcMain.handle('load-directory-children', async (event, dirPath: string) => {
     return children;
   } catch (error) {
     console.error('Error loading directory children:', error);
-    return [];
+
+    // Ensure we return a proper error message, not an Event object
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error loading directory children';
+
+    throw new Error(errorMessage);
   }
 });
 
@@ -133,6 +142,144 @@ ipcMain.handle('open-folder', async () => {
   }
 });
 
+// Helper function to detect file language based on extension
+const getLanguageFromFileName = (fileName: string): string => {
+  const extension = path.extname(fileName).toLowerCase();
+
+  const languageMap: Record<string, string> = {
+    '.js': 'javascript',
+    '.jsx': 'jsx', // Specifically map JSX
+    '.ts': 'typescript',
+    '.tsx': 'tsx', // Specifically map TSX
+    '.py': 'python',
+    '.java': 'java',
+    '.c': 'c',
+    '.cpp': 'cpp',
+    '.cxx': 'cpp',
+    '.cc': 'cpp',
+    '.h': 'c',
+    '.hpp': 'cpp',
+    '.cs': 'csharp',
+    '.php': 'php',
+    '.rb': 'ruby',
+    '.go': 'go',
+    '.rs': 'rust',
+    '.swift': 'swift',
+    '.kt': 'kotlin',
+    '.scala': 'scala',
+    '.sh': 'shell',
+    '.bash': 'shell',
+    '.zsh': 'shell',
+    '.fish': 'shell',
+    '.ps1': 'powershell',
+    '.html': 'html',
+    '.htm': 'html',
+    '.css': 'css',
+    '.scss': 'scss',
+    '.sass': 'sass',
+    '.less': 'less',
+    '.json': 'json',
+    '.xml': 'xml',
+    '.yaml': 'yaml',
+    '.yml': 'yaml',
+    '.toml': 'toml',
+    '.ini': 'ini',
+    '.cfg': 'ini',
+    '.conf': 'ini',
+    '.md': 'markdown',
+    '.markdown': 'markdown',
+    '.txt': 'plaintext',
+    '.log': 'plaintext',
+    '.sql': 'sql',
+    '.dockerfile': 'dockerfile',
+    '.dockerignore': 'dockerfile',
+    '.gitignore': 'plaintext',
+    '.env': 'plaintext',
+  };
+
+  return languageMap[extension] || 'plaintext';
+};
+
+// New IPC handler for reading file contents
+ipcMain.handle('read-file', async (event, filePath: string) => {
+  let result = null;
+
+  try {
+    console.log('Reading file:', filePath);
+
+    // Validate input
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid file path provided');
+    }
+
+    // Check if file exists and is readable
+    const stats = await fs.promises.stat(filePath).catch(statError => {
+      throw new Error(`Cannot access file: ${statError.message}`);
+    });
+
+    if (!stats.isFile()) {
+      throw new Error('Path is not a file');
+    }
+
+    // Check file size (limit to 10MB for performance)
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    if (stats.size > maxFileSize) {
+      throw new Error('File too large (max 10MB)');
+    }
+
+    // Read file content with explicit error handling
+    const content = await fs.promises
+      .readFile(filePath, 'utf8')
+      .catch(readError => {
+        throw new Error(`Cannot read file content: ${readError.message}`);
+      });
+
+    const fileName = path.basename(filePath);
+    const language = getLanguageFromFileName(fileName);
+
+    result = {
+      path: filePath,
+      name: fileName,
+      content,
+      language,
+    };
+
+    // Validate result object before returning
+    if (
+      !result.path ||
+      !result.name ||
+      typeof result.content !== 'string' ||
+      !result.language
+    ) {
+      throw new Error('Invalid file data structure');
+    }
+
+    console.log(
+      'File read successfully:',
+      fileName,
+      `(${content.length} chars, ${language})`,
+    );
+    return result;
+  } catch (error) {
+    console.error('Error reading file:', filePath, error);
+
+    // Ensure we throw a proper Error object, not an Event
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error reading file';
+
+    const finalError = new Error(`Failed to read file: ${errorMessage}`);
+
+    // Log the error for debugging
+    console.error('Final error being thrown:', finalError.message);
+
+    throw finalError;
+  }
+});
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -142,6 +289,19 @@ const createWindow = () => {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
     frame: false, // Frameless window
+  });
+
+  // Add error handling for the webContents
+  mainWindow.webContents.on('unresponsive', () => {
+    console.error('Renderer process became unresponsive');
+  });
+
+  mainWindow.webContents.on('responsive', () => {
+    console.log('Renderer process became responsive again');
+  });
+
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    console.error('Renderer process gone:', details);
   });
 
   // and load the index.html of the app.
@@ -173,6 +333,15 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Add global error handlers
+process.on('uncaughtException', error => {
+  console.error('Uncaught Exception in Main Process:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection in Main Process:', reason);
 });
 
 // In this file you can include the rest of your app's specific main process
