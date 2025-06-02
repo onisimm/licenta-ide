@@ -1,8 +1,0 @@
-# Ctrl + Left/Right (Move by Word)
-"\e[1;5C": forward-word       # Ctrl + Right Arrow → Move forward by word
-"\e[1;5D": backward-word      # Ctrl + Left Arrow → Move backward by word
-
-# Alt + Left/Right (Move to Start/End of Line)
-"\e[1;3C": end-of-line        # Fn + Right Arrow → Move to end of line
-"\e[1;3D": beginning-of-line  # Fn + Left Arrow → Move to beginning of line
-

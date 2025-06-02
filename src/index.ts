@@ -12,25 +12,107 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 const SELECTED_FOLDER_STORE_NAME = 'selected-folder';
 const store = new Store();
 
+// Global reference to main window
+let mainWindow: BrowserWindow | null = null;
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-const get_files = (path: string) => {
-  const files = fs.readdirSync(path, {
-    recursive: true,
-    withFileTypes: true,
-  });
+const buildFileTree = (dirPath: string): any[] => {
+  try {
+    // Read only the direct children of this directory (not recursive)
+    const items = fs.readdirSync(dirPath, { withFileTypes: true });
 
-  return files
-    .map(file => ({ ...file, is_dir: file.isDirectory() }))
-    .filter(file => file.name !== '.git');
+    return items
+      .filter(item => item.name !== '.git' && !item.name.startsWith('.'))
+      .sort((a, b) => {
+        // Directories first, then files, alphabetically
+        if (a.isDirectory() && !b.isDirectory()) return -1;
+        if (!a.isDirectory() && b.isDirectory()) return 1;
+        return a.name.localeCompare(b.name);
+      })
+      .map(item => {
+        const itemPath = path.join(dirPath, item.name);
+        const node = {
+          name: item.name,
+          parentPath: dirPath,
+          path: itemPath,
+          isDirectory: item.isDirectory(),
+          children: [] as any[],
+        };
+
+        // Only for directories: recursively build children
+        if (item.isDirectory()) {
+          try {
+            node.children = buildFileTree(itemPath);
+          } catch (error) {
+            // Handle permission errors or other issues
+            console.warn(`Cannot read directory: ${itemPath}`, error);
+            node.children = [];
+          }
+        }
+
+        return node;
+      });
+  } catch (error) {
+    console.error(`Error reading directory: ${dirPath}`, error);
+    return [];
+  }
 };
+
+// Set up IPC handlers
+ipcMain.handle('get-folder', async () => {
+  // @ts-ignore
+  return store.get(SELECTED_FOLDER_STORE_NAME);
+});
+
+ipcMain.handle('open-folder', async () => {
+  try {
+    if (!mainWindow) {
+      console.error('No main window available');
+      return null;
+    }
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select Directory',
+    });
+
+    console.log('Dialog result:', result);
+
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      console.log('Dialog was cancelled or no paths selected');
+      return null;
+    }
+
+    const selectedPath = result.filePaths[0];
+    console.log('Selected path:', selectedPath);
+
+    const tree = buildFileTree(selectedPath);
+
+    const structure = {
+      name: path.basename(selectedPath),
+      root: selectedPath,
+      tree: tree,
+    };
+
+    console.log('Folder structure created successfully');
+
+    // @ts-ignore
+    store.set(SELECTED_FOLDER_STORE_NAME, structure);
+
+    return structure;
+  } catch (error) {
+    console.error('Error in open-folder handler:', error);
+    return null;
+  }
+});
 
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -41,33 +123,6 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-
-  ipcMain.handle('get-folder', async () => {
-    // @ts-ignore
-    return store.get(SELECTED_FOLDER_STORE_NAME);
-  });
-
-  ipcMain.handle('open-folder', async () => {
-    const folder = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory'],
-    });
-
-    if (folder.canceled) return; // If the user canceled the folder select, we just return void
-
-    const tree = get_files(folder.filePaths[0]);
-    const structure = {
-      name: path.dirname(folder.filePaths[0]),
-      root: folder.filePaths[0],
-      tree: tree,
-    };
-
-    console.log('structure', structure);
-
-    // @ts-ignore
-    store.set(SELECTED_FOLDER_STORE_NAME, structure);
-
-    return structure;
-  });
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();

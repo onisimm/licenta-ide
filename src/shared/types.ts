@@ -10,6 +10,8 @@ export type TFolderTree = {
   path: string;
   children?: TFolderTree[];
   isDirectory: boolean;
+  isLoading?: boolean;
+  childrenLoaded?: boolean;
 };
 
 export interface IMainState {
