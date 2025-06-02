@@ -12,6 +12,9 @@ const renderer = {
     const folder = ipcRenderer.invoke('get-folder');
     return folder;
   },
+  loadDirectoryChildren: (dirPath: string) => {
+    return ipcRenderer.invoke('load-directory-children', dirPath);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);

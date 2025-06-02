@@ -1,9 +1,9 @@
 import { Box, styled, Typography, IconButton, Tooltip } from '@mui/material';
 import { memo, useEffect, useCallback, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../shared/hooks';
-import { setFolderStructure } from '../shared/rdx-slice';
+import { setFolderStructure, updateTreeItem } from '../shared/rdx-slice';
 import { FileTree } from '../components/file-tree';
-import { IFolderStructure } from '../shared/types';
+import { IFolderStructure, TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
 
 const ExplorerContainer = styled(Box)(({ theme }) => ({
@@ -208,6 +208,13 @@ export const ExplorerSection = memo(() => {
     }
   }, [dispatch]);
 
+  const handleUpdateTreeItem = useCallback(
+    (path: string, updates: Partial<TFolderTree>) => {
+      dispatch(updateTreeItem({ path, updates }));
+    },
+    [dispatch],
+  );
+
   const handleNewFile = useCallback(() => {
     console.log('New file clicked');
     // TODO: Implement new file functionality
@@ -289,7 +296,10 @@ export const ExplorerSection = memo(() => {
 
           {isRootExpanded && (
             <ExplorerContent>
-              <FileTree items={folderStructure.tree} />
+              <FileTree
+                items={folderStructure.tree}
+                onUpdateItem={handleUpdateTreeItem}
+              />
             </ExplorerContent>
           )}
         </>

@@ -20,7 +20,10 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-const buildFileTree = (dirPath: string): any[] => {
+const buildFileTree = (
+  dirPath: string,
+  loadChildren: boolean = false,
+): any[] => {
   try {
     // Read only the direct children of this directory (not recursive)
     const items = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -41,16 +44,20 @@ const buildFileTree = (dirPath: string): any[] => {
           path: itemPath,
           isDirectory: item.isDirectory(),
           children: [] as any[],
+          childrenLoaded: false,
+          isLoading: false,
         };
 
-        // Only for directories: recursively build children
-        if (item.isDirectory()) {
+        // For directories: only load children if explicitly requested
+        if (item.isDirectory() && loadChildren) {
           try {
-            node.children = buildFileTree(itemPath);
+            node.children = buildFileTree(itemPath, false); // Don't recursively load all children
+            node.childrenLoaded = true;
           } catch (error) {
             // Handle permission errors or other issues
             console.warn(`Cannot read directory: ${itemPath}`, error);
             node.children = [];
+            node.childrenLoaded = true; // Mark as loaded even if empty due to error
           }
         }
 
@@ -61,6 +68,18 @@ const buildFileTree = (dirPath: string): any[] => {
     return [];
   }
 };
+
+// New IPC handler for loading children of a specific directory
+ipcMain.handle('load-directory-children', async (event, dirPath: string) => {
+  try {
+    console.log('Loading children for:', dirPath);
+    const children = buildFileTree(dirPath, false);
+    return children;
+  } catch (error) {
+    console.error('Error loading directory children:', error);
+    return [];
+  }
+});
 
 // Set up IPC handlers
 ipcMain.handle('get-folder', async () => {
@@ -90,7 +109,8 @@ ipcMain.handle('open-folder', async () => {
     const selectedPath = result.filePaths[0];
     console.log('Selected path:', selectedPath);
 
-    const tree = buildFileTree(selectedPath);
+    // Only load the first level initially
+    const tree = buildFileTree(selectedPath, false);
 
     const structure = {
       name: path.basename(selectedPath),
@@ -98,7 +118,7 @@ ipcMain.handle('open-folder', async () => {
       tree: tree,
     };
 
-    console.log('Folder structure created successfully');
+    console.log('Folder structure created successfully (first level only)');
 
     // @ts-ignore
     store.set(SELECTED_FOLDER_STORE_NAME, structure);

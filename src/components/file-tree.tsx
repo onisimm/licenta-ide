@@ -1,11 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { Box, styled, Typography } from '@mui/material';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Box, styled, Typography, CircularProgress } from '@mui/material';
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
 
 interface FileTreeProps {
   items: TFolderTree[];
   level?: number;
+  onUpdateItem?: (path: string, updatedItem: Partial<TFolderTree>) => void;
 }
 
 interface FileItemProps {
@@ -14,6 +15,7 @@ interface FileItemProps {
   isExpanded: boolean;
   onToggle: () => void;
   onFileClick: (item: TFolderTree) => void;
+  onUpdateItem?: (path: string, updatedItem: Partial<TFolderTree>) => void;
 }
 
 const TreeContainer = styled(Box)(({ theme }) => ({
@@ -80,25 +82,61 @@ const FileName = styled(Typography)(({ theme }) => ({
   flex: 1,
 }));
 
+const LoadingSpinner = styled(CircularProgress)(({ theme }) => ({
+  marginLeft: theme.spacing(0.5),
+  color: theme.palette.text.secondary,
+}));
+
 const FileItem: React.FC<FileItemProps> = ({
   item,
   level,
   isExpanded,
   onToggle,
   onFileClick,
+  onUpdateItem,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleToggle = useCallback(async () => {
+    if (!item.isDirectory) return;
+
+    // If expanding and children haven't been loaded yet, load them
+    if (!isExpanded && !item.childrenLoaded && !item.isLoading) {
+      // Set loading state
+      onUpdateItem?.(item.path, { isLoading: true });
+
+      try {
+        const children = await window.electron.loadDirectoryChildren(item.path);
+
+        // Update the item with loaded children
+        onUpdateItem?.(item.path, {
+          children: children,
+          childrenLoaded: true,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error('Error loading directory children:', error);
+        onUpdateItem?.(item.path, {
+          children: [],
+          childrenLoaded: true,
+          isLoading: false,
+        });
+      }
+    }
+
+    onToggle();
+  }, [item, isExpanded, onToggle, onUpdateItem]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (item.isDirectory) {
-        onToggle();
+        handleToggle();
       } else {
         onFileClick(item);
       }
     },
-    [item, onToggle, onFileClick],
+    [item, handleToggle, onFileClick],
   );
 
   return (
@@ -115,7 +153,7 @@ const FileItem: React.FC<FileItemProps> = ({
           onClick={e => {
             e.stopPropagation();
             if (item.isDirectory) {
-              onToggle();
+              handleToggle();
             }
           }}
         />
@@ -123,17 +161,29 @@ const FileItem: React.FC<FileItemProps> = ({
           {getFileIcon(item.name, item.isDirectory, isExpanded)}
         </FileIcon>
         <FileName>{item.name}</FileName>
+        {item.isLoading && <LoadingSpinner size={12} thickness={4} />}
       </FileItemContainer>
 
       {item.isDirectory && isExpanded && item.children && (
-        <FileTree items={item.children} level={level + 1} />
+        <FileTree
+          items={item.children}
+          level={level + 1}
+          onUpdateItem={onUpdateItem}
+        />
       )}
     </>
   );
 };
 
-export const FileTree: React.FC<FileTreeProps> = ({ items, level = 0 }) => {
+export const FileTree: React.FC<FileTreeProps> = ({
+  items,
+  level = 0,
+  onUpdateItem,
+}) => {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Use useMemo to prevent unnecessary re-creation of tree items
+  const treeItems = useMemo(() => items, [items]);
 
   const toggleExpanded = useCallback((path: string) => {
     setExpandedItems(prev => {
@@ -147,18 +197,28 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, level = 0 }) => {
     });
   }, []);
 
+  const handleUpdateItem = useCallback(
+    (path: string, updatedItem: Partial<TFolderTree>) => {
+      // Propagate to parent immediately without local state management
+      if (onUpdateItem) {
+        onUpdateItem(path, updatedItem);
+      }
+    },
+    [onUpdateItem],
+  );
+
   const handleFileClick = useCallback((item: TFolderTree) => {
     console.log('File clicked:', item.path);
     // TODO: Open file in editor
   }, []);
 
-  if (!items || items.length === 0) {
+  if (!treeItems || treeItems.length === 0) {
     return null;
   }
 
   return (
     <TreeContainer>
-      {items.map(item => (
+      {treeItems.map(item => (
         <FileItem
           key={item.path}
           item={item}
@@ -166,6 +226,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, level = 0 }) => {
           isExpanded={expandedItems.has(item.path)}
           onToggle={() => toggleExpanded(item.path)}
           onFileClick={handleFileClick}
+          onUpdateItem={handleUpdateItem}
         />
       ))}
     </TreeContainer>
