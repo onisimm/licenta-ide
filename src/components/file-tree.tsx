@@ -42,26 +42,28 @@ const FileItemContainer = styled(Box)<{ level: number; isHovered?: boolean }>(
   }),
 );
 
-const ExpandIcon = styled(Box)<{ isExpanded: boolean; isDirectory: boolean }>(
-  ({ isExpanded, isDirectory }) => ({
-    width: 16,
-    height: 16,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-    opacity: isDirectory ? 1 : 0,
-    cursor: isDirectory ? 'pointer' : 'default',
-    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-    transition: 'transform 0.15s ease-in-out',
+const ExpandIcon = styled(Box)<{
+  isExpanded: boolean;
+  isDirectory: boolean;
+  hasPreloadedChildren?: boolean;
+}>(({ isExpanded, isDirectory, hasPreloadedChildren }) => ({
+  width: 16,
+  height: 16,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 4,
+  opacity: isDirectory ? 1 : 0,
+  cursor: isDirectory ? 'pointer' : 'default',
+  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+  transition: 'transform 0.15s ease-in-out',
 
-    '&::before': {
-      content: isDirectory ? '"▶"' : '""',
-      fontSize: '10px',
-      color: '#8e8e8e',
-    },
-  }),
-);
+  '&::before': {
+    content: isDirectory ? '"▶"' : '""',
+    fontSize: '10px',
+    color: hasPreloadedChildren ? '#4CAF50' : '#8e8e8e', // Green if pre-loaded, gray if needs loading
+  },
+}));
 
 const FileIcon = styled(Box)(({ theme }) => ({
   width: 16,
@@ -106,6 +108,7 @@ const FileItem: React.FC<FileItemProps> = ({
       onUpdateItem?.(item.path, { isLoading: true });
 
       try {
+        // Load 2 levels deep for better UX
         const children = await window.electron.loadDirectoryChildren(item.path);
 
         // Update the item with loaded children
@@ -139,6 +142,11 @@ const FileItem: React.FC<FileItemProps> = ({
     [item, handleToggle, onFileClick],
   );
 
+  // Determine if this directory has children or could have children
+  const hasChildren = item.children && item.children.length > 0;
+  const couldHaveChildren =
+    item.isDirectory && (!item.childrenLoaded || hasChildren);
+
   return (
     <>
       <FileItemContainer
@@ -149,7 +157,8 @@ const FileItem: React.FC<FileItemProps> = ({
         onMouseLeave={() => setIsHovered(false)}>
         <ExpandIcon
           isExpanded={isExpanded}
-          isDirectory={item.isDirectory}
+          isDirectory={couldHaveChildren}
+          hasPreloadedChildren={item.childrenLoaded && hasChildren}
           onClick={e => {
             e.stopPropagation();
             if (item.isDirectory) {
@@ -164,7 +173,7 @@ const FileItem: React.FC<FileItemProps> = ({
         {item.isLoading && <LoadingSpinner size={12} thickness={4} />}
       </FileItemContainer>
 
-      {item.isDirectory && isExpanded && item.children && (
+      {item.isDirectory && isExpanded && hasChildren && (
         <FileTree
           items={item.children}
           level={level + 1}
