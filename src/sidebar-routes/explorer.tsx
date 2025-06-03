@@ -14,24 +14,6 @@ const ExplorerContainer = styled(Box)(({ theme }) => ({
   overflow: 'hidden',
 }));
 
-const ExplorerHeader = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1, 1.5),
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.background.paper,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  minHeight: 35,
-}));
-
-const ExplorerTitle = styled(Typography)(({ theme }) => ({
-  fontSize: '11px',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-  color: theme.palette.text.secondary,
-}));
-
 const OpenFolderButton = styled('button')(({ theme }) => ({
   outline: 'none',
   backgroundColor: 'transparent',
@@ -239,14 +221,9 @@ export const ExplorerSection = memo(() => {
 
   return (
     <ExplorerContainer>
-      <ExplorerHeader>
-        <ExplorerTitle>Explorer</ExplorerTitle>
-        {hasFolder && (
-          <OpenFolderButton onClick={openFolder}>
-            Change Folder
-          </OpenFolderButton>
-        )}
-      </ExplorerHeader>
+      {hasFolder && (
+        <OpenFolderButton onClick={openFolder}>Change Folder</OpenFolderButton>
+      )}
 
       {hasFolder ? (
         <>

@@ -1,8 +1,7 @@
 import { memo, useCallback } from 'react';
 import { Box, styled, CircularProgress, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../shared/hooks';
-import { setFolderStructure } from '../shared/rdx-slice';
-import { IFolderStructure } from '../shared/types';
+import { setFolderStructure, setSelectedFile } from '../shared/rdx-slice';
 import { CodeEditor } from '../components/code-editor';
 import { ErrorBoundary } from '../components/error-boundary';
 
@@ -69,8 +68,23 @@ const ContentSection = memo(() => {
   const isLoadingFile = useAppSelector(state => state.main.isLoadingFile);
 
   const handleOpenFolder = useCallback(async () => {
-    const folder: IFolderStructure = await window.electron.openFolder();
-    dispatch(setFolderStructure(folder));
+    try {
+      const result = await window.electron.openFileOrFolder();
+
+      if (!result) {
+        return; // User cancelled or error occurred
+      }
+
+      if (result.type === 'folder') {
+        // Handle folder selection - update folder structure and clear any selected file
+        dispatch(setFolderStructure(result.folder));
+      } else if (result.type === 'file') {
+        // Handle file selection - set the selected file but don't change folder structure
+        dispatch(setSelectedFile(result.file));
+      }
+    } catch (error) {
+      console.error('Error opening file or folder:', error);
+    }
   }, [dispatch]);
 
   const handleFileChange = useCallback((value: string | undefined) => {
@@ -144,9 +158,9 @@ const ContentSection = memo(() => {
       <DefaultSection>
         {!hasFolder ? (
           <>
-            <NoFileSelectedText>No directory opened</NoFileSelectedText>
+            <NoFileSelectedText>No file or directory opened</NoFileSelectedText>
             <DefaultSectionButton onClick={handleOpenFolder}>
-              Open Directory
+              Open File or Directory
             </DefaultSectionButton>
           </>
         ) : (

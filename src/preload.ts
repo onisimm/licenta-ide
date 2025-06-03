@@ -38,6 +38,15 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  openFileOrFolder: async () => {
+    try {
+      const result = await ipcRenderer.invoke('open-file-or-folder');
+      return result;
+    } catch (error) {
+      console.error('Error in openFileOrFolder preload:', error);
+      throw normalizeError(error);
+    }
+  },
   getFolder: async () => {
     try {
       const folder = await ipcRenderer.invoke('get-folder');

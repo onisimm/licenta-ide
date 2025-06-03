@@ -142,6 +142,110 @@ ipcMain.handle('open-folder', async () => {
   }
 });
 
+ipcMain.handle('open-file-or-folder', async () => {
+  try {
+    if (!mainWindow) {
+      console.error('No main window available');
+      return null;
+    }
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile', 'openDirectory'],
+      title: 'Select File or Directory',
+    });
+
+    console.log('File/Folder dialog result:', result);
+
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      console.log('Dialog was cancelled or no paths selected');
+      return null;
+    }
+
+    const selectedPath = result.filePaths[0];
+    console.log('Selected path:', selectedPath);
+
+    // Check if the selected path is a file or directory
+    const stats = fs.statSync(selectedPath);
+
+    if (stats.isFile()) {
+      // Handle file opening
+      const content = fs.readFileSync(selectedPath, 'utf8');
+      const fileName = path.basename(selectedPath);
+      const fileExtension = path.extname(selectedPath).toLowerCase();
+
+      // Map file extensions to languages
+      const languageMap: { [key: string]: string } = {
+        '.js': 'javascript',
+        '.jsx': 'jsx',
+        '.ts': 'typescript',
+        '.tsx': 'tsx',
+        '.json': 'json',
+        '.html': 'html',
+        '.css': 'css',
+        '.scss': 'scss',
+        '.less': 'less',
+        '.xml': 'xml',
+        '.yaml': 'yaml',
+        '.yml': 'yaml',
+        '.md': 'markdown',
+        '.py': 'python',
+        '.java': 'java',
+        '.cs': 'csharp',
+        '.cpp': 'cpp',
+        '.c': 'c',
+        '.php': 'php',
+        '.rb': 'ruby',
+        '.go': 'go',
+        '.rs': 'rust',
+        '.swift': 'swift',
+        '.kt': 'kotlin',
+        '.scala': 'scala',
+        '.sh': 'shell',
+        '.ps1': 'powershell',
+        '.sql': 'sql',
+        '.dockerfile': 'dockerfile',
+        '.txt': 'plaintext',
+      };
+
+      const language = languageMap[fileExtension] || 'plaintext';
+
+      return {
+        type: 'file',
+        file: {
+          path: selectedPath,
+          name: fileName,
+          content: content,
+          language: language,
+        },
+      };
+    } else if (stats.isDirectory()) {
+      // Handle directory opening (same as existing logic)
+      const tree = buildFileTree(selectedPath, 2, 0);
+
+      const structure = {
+        name: path.basename(selectedPath),
+        root: selectedPath,
+        tree: tree,
+      };
+
+      console.log('Folder structure created successfully (2 levels deep)');
+
+      // @ts-ignore
+      store.set(SELECTED_FOLDER_STORE_NAME, structure);
+
+      return {
+        type: 'folder',
+        folder: structure,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in open-file-or-folder handler:', error);
+    return null;
+  }
+});
+
 // Helper function to detect file language based on extension
 const getLanguageFromFileName = (fileName: string): string => {
   const extension = path.extname(fileName).toLowerCase();
