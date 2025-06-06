@@ -3,6 +3,9 @@ import { Box, styled, CircularProgress, Typography } from '@mui/material';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
+import loader from '@monaco-editor/loader';
+
+loader.config({ monaco });
 
 interface CodeEditorProps {
   value: string;
@@ -220,6 +223,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
               reactNamespace: 'React',
               allowJs: true,
               typeRoots: ['node_modules/@types'],
+              strict: false, // Allow more lenient TypeScript for better editor experience
+              skipLibCheck: true, // Skip type checking of declaration files
             },
           );
 
@@ -404,6 +409,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
             height="100%"
             language={monacoLanguage}
             value={value}
+            path={`file:///${fileName}`}
             onChange={handleEditorChange}
             onMount={handleEditorDidMount}
             beforeMount={handleBeforeMount}

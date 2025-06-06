@@ -109,34 +109,6 @@ const ContentSection = memo(() => {
     return (
       <ContentContainer>
         <ErrorBoundary>
-          {/* Temporarily disable Monaco Editor to isolate the error */}
-          <Box
-            sx={{
-              p: 2,
-              height: '100%',
-              overflow: 'auto',
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              backgroundColor: '#0d1117',
-              color: '#fafafa',
-            }}>
-            <Typography variant="h6" gutterBottom>
-              {selectedFile.name} ({selectedFile.language})
-            </Typography>
-            <Typography
-              component="pre"
-              sx={{
-                fontFamily: 'monospace',
-                fontSize: '13px',
-                lineHeight: 1.6,
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}>
-              {selectedFile.content}
-            </Typography>
-          </Box>
-          {/* 
           <CodeEditor
             value={selectedFile.content}
             language={selectedFile.language}
@@ -144,7 +116,6 @@ const ContentSection = memo(() => {
             onChange={handleFileChange}
             readOnly={false}
           />
-          */}
         </ErrorBoundary>
       </ContentContainer>
     );

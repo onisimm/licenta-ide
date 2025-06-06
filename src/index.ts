@@ -325,11 +325,7 @@ ipcMain.handle('read-file', async (event, filePath: string) => {
       throw new Error('Path is not a file');
     }
 
-    // Check file size (limit to 10MB for performance)
     const maxFileSize = 10 * 1024 * 1024; // 10MB
-    if (stats.size > maxFileSize) {
-      throw new Error('File too large (max 10MB)');
-    }
 
     // Read file content with explicit error handling
     const content = await fs.promises
