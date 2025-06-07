@@ -30,7 +30,6 @@ const buildFileTree = (
     const items = fs.readdirSync(dirPath, { withFileTypes: true });
 
     return items
-      .filter(item => item.name !== '.git' && !item.name.startsWith('.'))
       .sort((a, b) => {
         // Directories first, then files, alphabetically
         if (a.isDirectory() && !b.isDirectory()) return -1;
