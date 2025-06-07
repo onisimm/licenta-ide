@@ -383,12 +383,12 @@ ipcMain.handle('read-file', async (event, filePath: string) => {
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
-    frame: false, // Frameless window
+    frame: true, // Frameless window
   });
 
   // Add error handling for the webContents

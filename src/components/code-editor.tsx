@@ -231,9 +231,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           // Configure diagnostics
           monacoInstance.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
             {
-              noSemanticValidation: false,
+              noSemanticValidation: true,
               noSyntaxValidation: false,
-              noSuggestionDiagnostics: true,
+              noSuggestionDiagnostics: false,
             },
           );
         }

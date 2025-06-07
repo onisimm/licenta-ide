@@ -294,7 +294,7 @@ export const ExplorerSection = memo(() => {
 export const EmptySection = memo(() => {
   return (
     <ExplorerContainer>
-      <EmptyState>No panel selected</EmptyState>
+      <EmptyState>Nothing here yet</EmptyState>
     </ExplorerContainer>
   );
 });
