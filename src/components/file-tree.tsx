@@ -1,5 +1,11 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Box, styled, Typography, CircularProgress } from '@mui/material';
+import {
+  Box,
+  styled,
+  Typography,
+  CircularProgress,
+  Tooltip,
+} from '@mui/material';
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
 import { useAppDispatch } from '../shared/hooks';
@@ -49,14 +55,15 @@ const ExpandIcon = styled(Box)<{
   isExpanded: boolean;
   isDirectory: boolean;
   hasPreloadedChildren?: boolean;
-}>(({ isExpanded, isDirectory, hasPreloadedChildren }) => ({
+  isGitIgnored?: boolean;
+}>(({ isExpanded, isDirectory, hasPreloadedChildren, isGitIgnored }) => ({
   width: 16,
   height: 16,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   marginRight: 4,
-  opacity: isDirectory ? 1 : 0,
+  opacity: isDirectory ? (isGitIgnored ? 0.4 : 1) : 0,
   cursor: isDirectory ? 'pointer' : 'default',
   transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
   transition: 'transform 0.15s ease-in-out',
@@ -64,28 +71,36 @@ const ExpandIcon = styled(Box)<{
   '&::before': {
     content: isDirectory ? '"▶"' : '""',
     fontSize: '10px',
-    color: '#8e8e8e',
+    color: isGitIgnored ? '#6e6e6e' : '#8e8e8e',
   },
 }));
 
-const FileIcon = styled(Box)(({ theme }) => ({
-  width: 16,
-  height: 16,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: theme.spacing(0.75),
-  flexShrink: 0,
-}));
+const FileIcon = styled(Box)<{ isGitIgnored?: boolean }>(
+  ({ theme, isGitIgnored }) => ({
+    width: 16,
+    height: 16,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing(0.75),
+    flexShrink: 0,
+    opacity: isGitIgnored ? 0.5 : 1,
+    filter: isGitIgnored ? 'grayscale(50%)' : 'none',
+  }),
+);
 
-const FileName = styled(Typography)(({ theme }) => ({
-  fontSize: '13px',
-  fontWeight: 400,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  flex: 1,
-}));
+const FileName = styled(Typography)<{ isGitIgnored?: boolean }>(
+  ({ theme, isGitIgnored }) => ({
+    fontSize: '13px',
+    fontWeight: 400,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    flex: 1,
+    color: 'inherit',
+    opacity: isGitIgnored ? 0.4 : 1,
+  }),
+);
 
 const LoadingSpinner = styled(CircularProgress)(({ theme }) => ({
   marginLeft: theme.spacing(0.5),
@@ -163,6 +178,7 @@ const FileItem: React.FC<FileItemProps> = ({
           isExpanded={isExpanded}
           isDirectory={couldHaveChildren}
           hasPreloadedChildren={item.childrenLoaded && hasChildren}
+          isGitIgnored={item.isGitIgnored}
           onClick={e => {
             e.stopPropagation();
             if (item.isDirectory) {
@@ -170,10 +186,15 @@ const FileItem: React.FC<FileItemProps> = ({
             }
           }}
         />
-        <FileIcon>
+        <FileIcon isGitIgnored={item.isGitIgnored}>
           {getFileIcon(item.name, item.isDirectory, isExpanded)}
         </FileIcon>
-        <FileName>{item.name}</FileName>
+        <Tooltip
+          title={item.isGitIgnored ? 'This file is ignored by git' : ''}
+          placement="top"
+          disableHoverListener={!item.isGitIgnored}>
+          <FileName isGitIgnored={item.isGitIgnored}>{item.name}</FileName>
+        </Tooltip>
         {item.isLoading && <LoadingSpinner size={12} thickness={4} />}
       </FileItemContainer>
 

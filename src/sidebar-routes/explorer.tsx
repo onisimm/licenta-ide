@@ -5,6 +5,10 @@ import { setFolderStructure, updateTreeItem } from '../shared/rdx-slice';
 import { FileTree } from '../components/file-tree';
 import { IFolderStructure, TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
+import {
+  initializeGitIgnore,
+  getGitIgnoreChecker,
+} from '../shared/gitignore-utils';
 
 const ExplorerContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -172,6 +176,28 @@ const CollapseIcon = () => (
   </svg>
 );
 
+// Helper function to mark files as git ignored
+const markGitIgnoredFiles = (
+  items: TFolderTree[],
+  checker: any,
+): TFolderTree[] => {
+  return items.map(item => {
+    const isGitIgnored = checker ? checker.isIgnored(item.path) : false;
+
+    if (isGitIgnored) {
+      console.log(`Git ignored: ${item.name} (${item.path})`);
+    }
+
+    return {
+      ...item,
+      isGitIgnored,
+      children: item.children
+        ? markGitIgnoredFiles(item.children, checker)
+        : undefined,
+    };
+  });
+};
+
 export const ExplorerSection = memo(() => {
   const dispatch = useAppDispatch();
   const folderStructure = useAppSelector(state => state.main.folderStructure);
@@ -182,7 +208,32 @@ export const ExplorerSection = memo(() => {
     try {
       const folder: IFolderStructure = await window.electron.openFolder();
       if (folder && Object.keys(folder).length > 0) {
-        dispatch(setFolderStructure(folder));
+        // Initialize gitignore checker
+        try {
+          const gitIgnoreChecker = await initializeGitIgnore(folder.root);
+          console.log(
+            'GitIgnore patterns loaded:',
+            gitIgnoreChecker.getPatterns(),
+          );
+
+          // Mark files as git ignored
+          const updatedTree = markGitIgnoredFiles(
+            folder.tree,
+            gitIgnoreChecker,
+          );
+
+          dispatch(
+            setFolderStructure({
+              ...folder,
+              tree: updatedTree,
+            }),
+          );
+        } catch (error) {
+          console.warn('Failed to initialize gitignore:', error);
+          // Still set the folder structure without gitignore info
+          dispatch(setFolderStructure(folder));
+        }
+
         setIsRootExpanded(true); // Auto-expand when new folder is selected
       }
     } catch (error) {
@@ -192,6 +243,14 @@ export const ExplorerSection = memo(() => {
 
   const handleUpdateTreeItem = useCallback(
     (path: string, updates: Partial<TFolderTree>) => {
+      // If we're updating children, mark them as git ignored too
+      if (updates.children) {
+        const checker = getGitIgnoreChecker();
+        if (checker) {
+          updates.children = markGitIgnoredFiles(updates.children, checker);
+        }
+      }
+
       dispatch(updateTreeItem({ path, updates }));
     },
     [dispatch],

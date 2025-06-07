@@ -12,6 +12,7 @@ export type TFolderTree = {
   isDirectory: boolean;
   isLoading?: boolean;
   childrenLoaded?: boolean;
+  isGitIgnored?: boolean;
 };
 
 export interface ISelectedFile {
