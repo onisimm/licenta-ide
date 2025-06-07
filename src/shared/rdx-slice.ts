@@ -64,6 +64,11 @@ export const mainSlice = createSlice({
       state.selectedFile = action.payload;
       state.isLoadingFile = false;
     },
+    updateSelectedFileContent: (state, action: PayloadAction<string>) => {
+      if (state.selectedFile) {
+        state.selectedFile.content = action.payload;
+      }
+    },
     clearSelectedFile: state => {
       state.selectedFile = null;
       state.isLoadingFile = false;
@@ -76,6 +81,7 @@ export const {
   updateTreeItem,
   setLoadingFile,
   setSelectedFile,
+  updateSelectedFileContent,
   clearSelectedFile,
 } = mainSlice.actions;
 

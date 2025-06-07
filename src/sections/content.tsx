@@ -87,11 +87,6 @@ const ContentSection = memo(() => {
     }
   }, [dispatch]);
 
-  const handleFileChange = useCallback((value: string | undefined) => {
-    // TODO: Implement file change handling (auto-save, dirty state, etc.)
-    console.log('File content changed:', value?.length, 'characters');
-  }, []);
-
   // Show loading state when file is being loaded
   if (isLoadingFile) {
     return (
@@ -113,7 +108,6 @@ const ContentSection = memo(() => {
             value={selectedFile.content}
             language={selectedFile.language}
             fileName={selectedFile.name}
-            onChange={handleFileChange}
             readOnly={false}
           />
         </ErrorBoundary>

@@ -379,6 +379,92 @@ ipcMain.handle('read-file', async (event, filePath: string) => {
   }
 });
 
+// New IPC handler for saving file contents
+ipcMain.handle(
+  'save-file',
+  async (event, filePath: string, content: string) => {
+    try {
+      console.log('🔄 Starting save operation...');
+      console.log('📁 File path:', filePath);
+      console.log('📝 Content length:', content.length);
+      console.log(
+        '📝 Content preview (first 100 chars):',
+        content.substring(0, 100),
+      );
+
+      // Validate input
+      if (!filePath || typeof filePath !== 'string') {
+        throw new Error('Invalid file path provided');
+      }
+
+      if (typeof content !== 'string') {
+        throw new Error('Invalid file content provided');
+      }
+
+      // Create backup if file exists
+      const backupPath = `${filePath}.backup`;
+      try {
+        if (fs.existsSync(filePath)) {
+          await fs.promises.copyFile(filePath, backupPath);
+          console.log('💾 Backup created:', backupPath);
+        }
+      } catch (backupError) {
+        console.warn('Could not create backup:', backupError);
+        // Continue with save even if backup fails
+      }
+
+      // Write file content with explicit error handling
+      console.log('✍️ Writing file...');
+      await fs.promises
+        .writeFile(filePath, content, 'utf8')
+        .catch(writeError => {
+          throw new Error(`Cannot write file content: ${writeError.message}`);
+        });
+
+      // Verify the write by reading it back immediately
+      console.log('🔍 Verifying write...');
+      const writtenContent = await fs.promises.readFile(filePath, 'utf8');
+      console.log('📖 Written content length:', writtenContent.length);
+
+      if (writtenContent.length !== content.length) {
+        throw new Error(
+          `Write verification failed: expected ${content.length} chars, got ${writtenContent.length}`,
+        );
+      }
+
+      // Remove backup on successful save
+      try {
+        if (fs.existsSync(backupPath)) {
+          await fs.promises.unlink(backupPath);
+          console.log('🗑️ Backup removed');
+        }
+      } catch (cleanupError) {
+        console.warn('Could not remove backup file:', cleanupError);
+        // Don't fail the save for this
+      }
+
+      console.log(
+        '✅ File saved successfully:',
+        filePath,
+        `(${content.length} chars)`,
+      );
+      return { success: true, path: filePath };
+    } catch (error) {
+      console.error('❌ Error saving file:', filePath, error);
+
+      // Ensure we throw a proper Error object
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+          ? error
+          : 'Unknown error saving file';
+
+      throw new Error(`Failed to save file: ${errorMessage}`);
+    }
+  },
+);
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -410,10 +496,109 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 };
 
+// Set up application menu
+const createMenu = () => {
+  const { Menu } = require('electron');
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open File or Folder...',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-open-file');
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Save File',
+          accelerator: 'CmdOrCtrl+S',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-save-file');
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+          click: () => app.quit(),
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [{ role: 'minimize' }, { role: 'close' }],
+    },
+  ];
+
+  // macOS specific menu adjustments
+  if (process.platform === 'darwin') {
+    template.unshift({
+      label: app.getName(),
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    });
+
+    // Window menu
+    template[4].submenu = [
+      { role: 'close' },
+      { role: 'minimize' },
+      { role: 'zoom' },
+      { type: 'separator' },
+      { role: 'front' },
+    ];
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+};
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  createMenu();
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the

@@ -87,6 +87,26 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  saveFile: async (filePath: string, content: string) => {
+    try {
+      const result = await ipcRenderer.invoke('save-file', filePath, content);
+      return result;
+    } catch (error) {
+      console.error('Error in saveFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  // Menu event listeners
+  onMenuSaveFile: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-save-file', listener);
+    return () => ipcRenderer.removeListener('menu-save-file', listener);
+  },
+  onMenuOpenFile: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-open-file', listener);
+    return () => ipcRenderer.removeListener('menu-open-file', listener);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);

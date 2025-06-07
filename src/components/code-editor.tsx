@@ -1,8 +1,11 @@
-import React, { memo, useRef, useEffect, useState } from 'react';
+import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
 import { Box, styled, CircularProgress, Typography } from '@mui/material';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
+import { useAppSelector, useAppDispatch } from '../shared/hooks';
+import { updateSelectedFileContent } from '../shared/rdx-slice';
+import type { RootState } from '../shared/store';
 import loader from '@monaco-editor/loader';
 
 loader.config({ monaco });
@@ -102,6 +105,103 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const [hasError, setHasError] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Redux hooks
+    const dispatch = useAppDispatch();
+    const selectedFile = useAppSelector(
+      (state: RootState) => state.main.selectedFile,
+    );
+
+    // Save file function
+    const saveFile = useCallback(async () => {
+      if (!selectedFile || !selectedFile.path) {
+        console.warn('No file selected to save');
+        return;
+      }
+
+      if (isSaving) {
+        console.log('Save already in progress');
+        return;
+      }
+
+      // Get current content directly from Monaco editor
+      const currentContent = editorRef.current?.getValue();
+      if (currentContent === undefined) {
+        console.warn('Could not get content from editor');
+        return;
+      }
+
+      try {
+        setIsSaving(true);
+        console.log(
+          'Saving file:',
+          selectedFile.path,
+          'with content length:',
+          currentContent.length,
+        );
+
+        const result = await window.electron.saveFile(
+          selectedFile.path,
+          currentContent,
+        );
+
+        if (result.success) {
+          console.log('File saved successfully:', result.path);
+
+          // Verify the save by reading the file back
+          try {
+            const verifyResult = await window.electron.readFile(
+              selectedFile.path,
+            );
+            if (verifyResult.content === currentContent) {
+              console.log(
+                '✅ Save verified - file content matches what we saved',
+              );
+            } else {
+              console.error(
+                '❌ Save verification failed - file content does not match',
+              );
+              console.log(
+                'Expected length:',
+                currentContent.length,
+                'Actual length:',
+                verifyResult.content.length,
+              );
+            }
+          } catch (verifyError) {
+            console.warn('Could not verify save:', verifyError);
+          }
+
+          // Update Redux state with the saved content to keep it in sync
+          dispatch(updateSelectedFileContent(currentContent));
+          // You could add a toast notification here if you have one
+        }
+      } catch (error) {
+        console.error('Error saving file:', error);
+        logError('File Save', error);
+
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        alert(`Error saving file: ${errorMessage}`);
+      } finally {
+        setIsSaving(false);
+      }
+    }, [selectedFile, isSaving, dispatch]);
+
+    // Menu event listeners
+    useEffect(() => {
+      const unsubscribeSave = window.electron.onMenuSaveFile?.(saveFile);
+      const unsubscribeOpen = window.electron.onMenuOpenFile?.(() => {
+        // You could implement open file from menu here if needed
+        console.log('Open file from menu');
+      });
+
+      return () => {
+        unsubscribeSave?.();
+        unsubscribeOpen?.();
+      };
+    }, [saveFile]);
 
     // More aggressive global error handling
     useEffect(() => {
@@ -300,7 +400,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
             monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
             () => {
               try {
-                console.log('Save file - TODO: implement save functionality');
+                saveFile();
               } catch (error) {
                 logError('Monaco Save Command', error);
               }
@@ -329,6 +429,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
 
     const handleEditorChange = (value: string | undefined) => {
       try {
+        // Update Redux state with the new content for real-time tracking
+        if (value !== undefined && selectedFile) {
+          dispatch(updateSelectedFileContent(value));
+        }
+
+        // Call the original onChange callback
         onChange?.(value);
       } catch (error) {
         console.error('Error in editor change callback:', error);
@@ -402,7 +508,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     return (
       <EditorContainer>
         <EditorHeader>
-          <FileName>{fileName}</FileName>
+          <FileName>
+            {fileName}
+            {isSaving && (
+              <Box component="span" ml={1}>
+                <CircularProgress size={12} />
+              </Box>
+            )}
+          </FileName>
         </EditorHeader>
         <EditorWrapper>
           <Editor
