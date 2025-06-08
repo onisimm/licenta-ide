@@ -3,12 +3,8 @@ import { Box, styled, CircularProgress, Typography } from '@mui/material';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
-import { useAppSelector, useAppDispatch } from '../shared/hooks';
-import {
-  updateSelectedFileContent,
-  clearSelectedFile,
-} from '../shared/rdx-slice';
-import type { RootState } from '../shared/store';
+import { useProjectOperations, useAppDispatch } from '../shared/hooks';
+import { updateSelectedFileContent } from '../shared/rdx-slice';
 import loader from '@monaco-editor/loader';
 
 loader.config({ monaco });
@@ -110,150 +106,77 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
 
-    // Redux hooks
+    // Project operations hook - centralized file/folder operations
+    const { saveFile, closeFile, closeFolder, selectedFile } =
+      useProjectOperations();
     const dispatch = useAppDispatch();
-    const selectedFile = useAppSelector(
-      (state: RootState) => state.main.selectedFile,
-    );
 
-    // Save file function
-    const saveFile = useCallback(async () => {
-      if (!selectedFile || !selectedFile.path) {
-        console.warn('No file selected to save');
-        return;
-      }
+    // Editor content getter function
+    const getEditorContent = useCallback(() => {
+      return editorRef.current?.getValue();
+    }, []);
 
+    // Save file function using the hook
+    const handleSaveFile = useCallback(async () => {
       if (isSaving) {
         console.log('Save already in progress');
         return;
       }
 
-      // Get current content directly from Monaco editor
-      const currentContent = editorRef.current?.getValue();
-      if (currentContent === undefined) {
-        console.warn('Could not get content from editor');
-        return;
-      }
-
       try {
         setIsSaving(true);
-        console.log(
-          'Saving file:',
-          selectedFile.path,
-          'with content length:',
-          currentContent.length,
-        );
-
-        const result = await window.electron.saveFile(
-          selectedFile.path,
-          currentContent,
-        );
-
-        if (result.success) {
-          console.log('File saved successfully:', result.path);
-
-          // Verify the save by reading the file back
-          try {
-            const verifyResult = await window.electron.readFile(
-              selectedFile.path,
-            );
-            if (verifyResult.content === currentContent) {
-              console.log(
-                '✅ Save verified - file content matches what we saved',
-              );
-            } else {
-              console.error(
-                '❌ Save verification failed - file content does not match',
-              );
-              console.log(
-                'Expected length:',
-                currentContent.length,
-                'Actual length:',
-                verifyResult.content.length,
-              );
-            }
-          } catch (verifyError) {
-            console.warn('Could not verify save:', verifyError);
-          }
-
-          // Update Redux state with the saved content to keep it in sync
-          dispatch(updateSelectedFileContent(currentContent));
-          // You could add a toast notification here if you have one
-        }
+        await saveFile(getEditorContent);
       } catch (error) {
-        console.error('Error saving file:', error);
-        logError('File Save', error);
-
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
         alert(`Error saving file: ${errorMessage}`);
       } finally {
         setIsSaving(false);
       }
-    }, [selectedFile, isSaving, dispatch]);
+    }, [saveFile, getEditorContent, isSaving]);
 
-    // Close file function
-    const closeFile = useCallback(() => {
-      if (!selectedFile) {
-        console.warn('No file selected to close');
-        return;
-      }
+    // Close file function using the hook
+    const handleCloseFile = useCallback(() => {
+      closeFile(getEditorContent);
+    }, [closeFile, getEditorContent]);
 
-      // Check if file has unsaved changes
-      const currentContent = editorRef.current?.getValue();
-      const hasUnsavedChanges = currentContent !== selectedFile.content;
+    // Close folder function using the hook
+    const handleCloseFolder = useCallback(() => {
+      closeFolder(getEditorContent);
+    }, [closeFolder, getEditorContent]);
 
-      if (hasUnsavedChanges) {
-        // Ask user if they want to save before closing
-        const shouldSave = window.confirm(
-          `The file "${selectedFile.name}" has unsaved changes. Do you want to save before closing?`,
-        );
-
-        if (shouldSave) {
-          // Save first, then close
-          saveFile()
-            .then(() => {
-              dispatch(clearSelectedFile());
-              console.log('File saved and closed:', selectedFile.name);
-            })
-            .catch(error => {
-              console.error('Error saving before close:', error);
-              // Ask if they want to close without saving
-              const forceClose = window.confirm(
-                'Failed to save the file. Do you want to close without saving?',
-              );
-              if (forceClose) {
-                dispatch(clearSelectedFile());
-                console.log('File closed without saving:', selectedFile.name);
-              }
-            });
-        } else {
-          // Ask for confirmation to close without saving
-          const confirmClose = window.confirm(
-            'Are you sure you want to close without saving your changes?',
-          );
-          if (confirmClose) {
-            dispatch(clearSelectedFile());
-            console.log('File closed without saving:', selectedFile.name);
+    // Real-time content change tracking
+    const handleEditorChange = useCallback(
+      (value: string | undefined) => {
+        try {
+          // Update Redux state with the new content for real-time tracking
+          if (value !== undefined && selectedFile) {
+            dispatch(updateSelectedFileContent(value));
           }
+
+          // Call the original onChange callback
+          onChange?.(value);
+        } catch (error) {
+          console.error('Error in editor change callback:', error);
+          logError('Monaco Editor change', error);
+          setHasError(true);
+          setErrorMessage(`Change error: ${error}`);
         }
-      } else {
-        // No unsaved changes, close directly
-        dispatch(clearSelectedFile());
-        console.log('File closed:', selectedFile.name);
-      }
-    }, [selectedFile, dispatch, saveFile]);
+      },
+      [selectedFile, dispatch, onChange],
+    );
 
     // Menu event listeners
     useEffect(() => {
-      const unsubscribeSave = window.electron.onMenuSaveFile?.(saveFile);
-      const unsubscribeClose = window.electron.onMenuCloseFile?.(closeFile);
+      const unsubscribeSave = window.electron.onMenuSaveFile?.(handleSaveFile);
+      const unsubscribeClose =
+        window.electron.onMenuCloseFile?.(handleCloseFile);
 
       return () => {
         unsubscribeSave?.();
         unsubscribeClose?.();
       };
-    }, [saveFile, closeFile]);
+    }, [handleSaveFile, handleCloseFile]);
 
     // More aggressive global error handling
     useEffect(() => {
@@ -452,7 +375,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
             monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
             () => {
               try {
-                saveFile();
+                handleSaveFile();
               } catch (error) {
                 logError('Monaco Save Command', error);
               }
@@ -463,9 +386,22 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
             monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW,
             () => {
               try {
-                closeFile();
+                handleCloseFile();
               } catch (error) {
                 logError('Monaco Close Command', error);
+              }
+            },
+          );
+
+          editor.addCommand(
+            monacoInstance.KeyMod.CtrlCmd |
+              monacoInstance.KeyMod.Shift |
+              monacoInstance.KeyCode.KeyW,
+            () => {
+              try {
+                handleCloseFolder();
+              } catch (error) {
+                logError('Monaco Close Folder Command', error);
               }
             },
           );
@@ -486,49 +422,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
         logError('Monaco Editor configuration', error);
         setHasError(true);
         setErrorMessage(`Configuration error: ${error}`);
-        throw normalizeError(error);
-      }
-    };
-
-    const handleEditorChange = (value: string | undefined) => {
-      try {
-        // Update Redux state with the new content for real-time tracking
-        if (value !== undefined && selectedFile) {
-          dispatch(updateSelectedFileContent(value));
-        }
-
-        // Call the original onChange callback
-        onChange?.(value);
-      } catch (error) {
-        console.error('Error in editor change callback:', error);
-        logError('Monaco Editor change', error);
-        setHasError(true);
-        setErrorMessage(`Change error: ${error}`);
-      }
-    };
-
-    // Handle Monaco Editor loading errors
-    const handleBeforeMount = (monaco: Monaco) => {
-      try {
-        console.log('Monaco Editor pre-configuration...');
-
-        // Set up global Monaco error handling
-        if (typeof window !== 'undefined') {
-          (window as any).MonacoEnvironment = {
-            ...(window as any).MonacoEnvironment,
-            onError: (error: any) => {
-              console.error('Monaco Environment Error:', error);
-              logError('Monaco Environment', error);
-              setHasError(true);
-              setErrorMessage(`Environment error: ${error}`);
-            },
-          };
-        }
-      } catch (error) {
-        console.error('Error in Monaco beforeMount:', error);
-        logError('Monaco Editor beforeMount', error);
-        setHasError(true);
-        setErrorMessage(`Before mount error: ${error}`);
         throw normalizeError(error);
       }
     };
@@ -588,7 +481,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
             path={`file:///${fileName}`}
             onChange={handleEditorChange}
             onMount={handleEditorDidMount}
-            beforeMount={handleBeforeMount}
             loading={
               <LoadingContainer>
                 <CircularProgress size={24} />

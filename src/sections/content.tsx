@@ -1,7 +1,6 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { Box, styled, CircularProgress, Typography } from '@mui/material';
-import { useAppDispatch, useAppSelector } from '../shared/hooks';
-import { setFolderStructure, setSelectedFile } from '../shared/rdx-slice';
+import { useAppSelector, useProjectOperations } from '../shared/hooks';
 import { CodeEditor } from '../components/code-editor';
 import { ErrorBoundary } from '../components/error-boundary';
 
@@ -62,30 +61,32 @@ const NoFileSelectedText = styled(Typography)(({ theme }) => ({
 }));
 
 const ContentSection = memo(() => {
-  const dispatch = useAppDispatch();
-  const folderStructure = useAppSelector(state => state.main.folderStructure);
-  const selectedFile = useAppSelector(state => state.main.selectedFile);
   const isLoadingFile = useAppSelector(state => state.main.isLoadingFile);
 
+  // Project operations hook - centralized file/folder operations
+  const { openFileOrFolder, closeFolder, hasFolder, selectedFile } =
+    useProjectOperations();
+
+  // Handle open file/folder using the centralized hook
   const handleOpenFolder = useCallback(async () => {
     try {
-      const result = await window.electron.openFileOrFolder();
-
-      if (!result) {
-        return; // User cancelled or error occurred
-      }
-
-      if (result.type === 'folder') {
-        // Handle folder selection - update folder structure and clear any selected file
-        dispatch(setFolderStructure(result.folder));
-      } else if (result.type === 'file') {
-        // Handle file selection - set the selected file but don't change folder structure
-        dispatch(setSelectedFile(result.file));
-      }
+      await openFileOrFolder();
     } catch (error) {
       console.error('Error opening file or folder:', error);
     }
-  }, [dispatch]);
+  }, [openFileOrFolder]);
+
+  // Menu event listeners
+  useEffect(() => {
+    const unsubscribeCloseFolder = window.electron.onMenuCloseFolder?.(() => {
+      // Use shared hook without editor content getter (for menu-triggered close)
+      closeFolder();
+    });
+
+    return () => {
+      unsubscribeCloseFolder?.();
+    };
+  }, [closeFolder]);
 
   // Show loading state when file is being loaded
   if (isLoadingFile) {
@@ -116,8 +117,6 @@ const ContentSection = memo(() => {
   }
 
   // Show default state when no folder or no file selected
-  const hasFolder = folderStructure && Object.keys(folderStructure).length > 0;
-
   return (
     <ContentContainer>
       <DefaultSection>

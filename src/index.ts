@@ -522,6 +522,15 @@ const createMenu = () => {
             }
           },
         },
+        {
+          label: 'Close Folder',
+          accelerator: 'CmdOrCtrl+Shift+W',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-close-folder');
+            }
+          },
+        },
         { type: 'separator' },
         {
           label: 'Save File',

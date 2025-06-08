@@ -73,6 +73,11 @@ export const mainSlice = createSlice({
       state.selectedFile = null;
       state.isLoadingFile = false;
     },
+    clearFolderStructure: state => {
+      state.folderStructure = {} as IFolderStructure;
+      state.selectedFile = null;
+      state.isLoadingFile = false;
+    },
   },
 });
 
@@ -83,6 +88,7 @@ export const {
   setSelectedFile,
   updateSelectedFileContent,
   clearSelectedFile,
+  clearFolderStructure,
 } = mainSlice.actions;
 
 export default mainSlice.reducer;
