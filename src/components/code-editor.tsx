@@ -1,5 +1,11 @@
 import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
-import { Box, styled, CircularProgress, Typography } from '@mui/material';
+import {
+  Box,
+  styled,
+  CircularProgress,
+  Typography,
+  alpha,
+} from '@mui/material';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
@@ -177,6 +183,56 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
         unsubscribeClose?.();
       };
     }, [handleSaveFile, handleCloseFile]);
+
+    // Listen for scroll to line messages from search results
+    useEffect(() => {
+      const handleScrollToLine = (event: MessageEvent) => {
+        if (
+          event.data.type === 'SCROLL_TO_LINE' &&
+          event.data.lineNumber &&
+          editorRef.current
+        ) {
+          const lineNumber = event.data.lineNumber;
+          console.log('Scrolling to line:', lineNumber);
+
+          const scrollToLine = () => {
+            if (editorRef.current) {
+              // Get the model to ensure content is loaded
+              const model = editorRef.current.getModel();
+              if (model && model.getLineCount() >= lineNumber) {
+                // Scroll to the line and highlight it
+                editorRef.current.revealLineInCenter(lineNumber);
+                editorRef.current.setPosition({ lineNumber, column: 1 });
+                editorRef.current.focus();
+
+                // Add selection to highlight the line temporarily
+                editorRef.current.setSelection({
+                  startLineNumber: lineNumber,
+                  startColumn: 1,
+                  endLineNumber: lineNumber,
+                  endColumn: model.getLineMaxColumn(lineNumber),
+                });
+
+                console.log('Successfully scrolled to line:', lineNumber);
+              } else {
+                console.log(
+                  'Model not ready or line number out of range, retrying...',
+                );
+                // Retry after a short delay if model isn't ready
+                setTimeout(scrollToLine, 50);
+              }
+            }
+          };
+
+          scrollToLine();
+        }
+      };
+
+      window.addEventListener('message', handleScrollToLine);
+      return () => {
+        window.removeEventListener('message', handleScrollToLine);
+      };
+    }, []);
 
     // More aggressive global error handling
     useEffect(() => {

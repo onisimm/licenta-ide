@@ -1,7 +1,11 @@
 import { Box, styled, Typography, IconButton, Tooltip } from '@mui/material';
 import { memo, useEffect, useCallback, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../shared/hooks';
-import { setFolderStructure, updateTreeItem } from '../shared/rdx-slice';
+import {
+  setFolderStructure,
+  updateTreeItem,
+  setExplorerExpanded,
+} from '../shared/rdx-slice';
 import { FileTree } from '../components/file-tree';
 import { IFolderStructure, TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
@@ -201,7 +205,9 @@ const markGitIgnoredFiles = (
 export const ExplorerSection = memo(() => {
   const dispatch = useAppDispatch();
   const folderStructure = useAppSelector(state => state.main.folderStructure);
-  const [isRootExpanded, setIsRootExpanded] = useState(true);
+  const isRootExpanded = useAppSelector(
+    state => state.main.sidebarState.explorerExpanded,
+  );
   const [isRootHovered, setIsRootHovered] = useState(false);
 
   const openFolder = useCallback(async () => {
@@ -234,7 +240,7 @@ export const ExplorerSection = memo(() => {
           dispatch(setFolderStructure(folder));
         }
 
-        setIsRootExpanded(true); // Auto-expand when new folder is selected
+        dispatch(setExplorerExpanded(true)); // Auto-expand when new folder is selected
       }
     } catch (error) {
       console.error('Error opening folder:', error);
@@ -303,7 +309,7 @@ export const ExplorerSection = memo(() => {
               isExpanded={isRootExpanded}
               onClick={e => {
                 e.stopPropagation();
-                setIsRootExpanded(!isRootExpanded);
+                dispatch(setExplorerExpanded(!isRootExpanded));
               }}
             />
             <RootFolderIcon>
@@ -311,7 +317,7 @@ export const ExplorerSection = memo(() => {
             </RootFolderIcon>
             <RootFolderName
               title={folderStructure.name}
-              onClick={() => setIsRootExpanded(!isRootExpanded)}>
+              onClick={() => dispatch(setExplorerExpanded(!isRootExpanded))}>
               {folderStructure.name}
             </RootFolderName>
             <ActionButtonsContainer>

@@ -117,6 +117,19 @@ const renderer = {
     ipcRenderer.on('menu-close-folder', listener);
     return () => ipcRenderer.removeListener('menu-close-folder', listener);
   },
+  searchInFolder: async (folderPath: string, searchQuery: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'search-in-folder',
+        folderPath,
+        searchQuery,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in searchInFolder preload:', error);
+      throw normalizeError(error);
+    }
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);

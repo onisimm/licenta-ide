@@ -222,16 +222,84 @@ export const useProjectOperations = () => {
     [folderStructure, selectedFile, dispatch],
   );
 
+  // Search in folder operation
+  const searchInFolder = useCallback(
+    async (searchQuery: string) => {
+      if (!folderStructure || !folderStructure.root) {
+        throw new Error('No folder opened to search in');
+      }
+
+      if (!searchQuery.trim()) {
+        throw new Error('Search query cannot be empty');
+      }
+
+      try {
+        console.log(
+          'Searching in folder:',
+          folderStructure.root,
+          'for:',
+          searchQuery,
+        );
+        const results = await window.electron.searchInFolder(
+          folderStructure.root,
+          searchQuery,
+        );
+        return results;
+      } catch (error) {
+        console.error('Error searching in folder:', error);
+        logError('Search in Folder', error);
+        throw error;
+      }
+    },
+    [folderStructure],
+  );
+
+  // Open file at specific line
+  const openFileAtLine = useCallback(
+    async (filePath: string, lineNumber: number) => {
+      try {
+        console.log('Opening file at line:', filePath, 'line:', lineNumber);
+
+        // Read the file first
+        const fileData = await window.electron.readFile(filePath);
+
+        if (fileData) {
+          // Set the selected file in Redux
+          dispatch(setSelectedFile(fileData));
+          console.log(
+            'File opened at line:',
+            fileData.name,
+            'line:',
+            lineNumber,
+          );
+
+          // Return line number for the editor to scroll to
+          return { file: fileData, lineNumber };
+        }
+
+        throw new Error('Failed to read file');
+      } catch (error) {
+        console.error('Error opening file at line:', error);
+        logError('Open File at Line', error);
+        throw error;
+      }
+    },
+    [dispatch],
+  );
+
   return {
     // Operations
     openFileOrFolder,
     saveFile,
     closeFile,
     closeFolder,
+    searchInFolder,
+    openFileAtLine,
 
     // State information
     hasFolder: folderStructure && Object.keys(folderStructure).length > 0,
     folderName: folderStructure?.name,
+    folderPath: folderStructure?.root,
     selectedFile,
     hasSelectedFile: !!selectedFile,
 

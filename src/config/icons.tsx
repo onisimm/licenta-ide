@@ -10,11 +10,6 @@ export const topIcons: IconType[] = [
   { name: IconListName.files, icon: <FilesIcon />, description: 'Files' },
   { name: IconListName.search, icon: <SearchIcon />, description: 'Search' },
   { name: IconListName.source, icon: <SourceIcon />, description: 'Source' },
-  {
-    name: IconListName.extension,
-    icon: <ExtensionIcon />,
-    description: 'Extension',
-  },
 ];
 
 export const bottomIcons: IconType[] = [

@@ -7,11 +7,63 @@ import {
   ISelectedFile,
 } from './types';
 
+// Search-related interfaces (moved from search-section.tsx)
+interface SearchMatch {
+  lineNumber: number;
+  lineContent: string;
+  matchCount: number;
+}
+
+interface SearchFileResult {
+  filePath: string;
+  fileName: string;
+  matches: SearchMatch[];
+  totalMatches: number;
+}
+
+interface SearchResults {
+  query: string;
+  totalMatches: number;
+  fileCount: number;
+  filesSearched?: number;
+  filesSkipped?: number;
+  searchDuration?: number;
+  results: SearchFileResult[];
+}
+
+interface SearchState {
+  query: string;
+  results: SearchResults | null;
+  isSearching: boolean;
+  error: string | null;
+  expandedFiles: string[]; // Array instead of Set for serialization
+}
+
+interface SidebarState {
+  explorerExpanded: boolean; // Root folder expansion state
+}
+
+// Updated main state interface
+interface IMainStateWithPersistence extends IMainState {
+  searchState: SearchState;
+  sidebarState: SidebarState;
+}
+
 // Define the initial state using that type
-const initialState: IMainState = {
+const initialState: IMainStateWithPersistence = {
   folderStructure: {} as IFolderStructure,
   selectedFile: null,
   isLoadingFile: false,
+  searchState: {
+    query: '',
+    results: null,
+    isSearching: false,
+    error: null,
+    expandedFiles: [],
+  },
+  sidebarState: {
+    explorerExpanded: true,
+  },
 };
 
 // Helper function to update tree items recursively
@@ -78,6 +130,50 @@ export const mainSlice = createSlice({
       state.selectedFile = null;
       state.isLoadingFile = false;
     },
+    // Search state actions
+    setSearchQuery: (state, action: PayloadAction<string>) => {
+      state.searchState.query = action.payload;
+    },
+    setSearchResults: (state, action: PayloadAction<SearchResults | null>) => {
+      state.searchState.results = action.payload;
+    },
+    setSearchLoading: (state, action: PayloadAction<boolean>) => {
+      state.searchState.isSearching = action.payload;
+    },
+    setSearchError: (state, action: PayloadAction<string | null>) => {
+      state.searchState.error = action.payload;
+    },
+    setSearchExpandedFiles: (state, action: PayloadAction<string[]>) => {
+      state.searchState.expandedFiles = action.payload;
+    },
+    toggleSearchFileExpansion: (state, action: PayloadAction<string>) => {
+      const filePath = action.payload;
+      const expandedFiles = state.searchState.expandedFiles;
+      const index = expandedFiles.indexOf(filePath);
+
+      if (index >= 0) {
+        // Remove if exists
+        state.searchState.expandedFiles = expandedFiles.filter(
+          path => path !== filePath,
+        );
+      } else {
+        // Add if doesn't exist
+        state.searchState.expandedFiles.push(filePath);
+      }
+    },
+    clearSearchState: state => {
+      state.searchState = {
+        query: '',
+        results: null,
+        isSearching: false,
+        error: null,
+        expandedFiles: [],
+      };
+    },
+    // Sidebar state actions
+    setExplorerExpanded: (state, action: PayloadAction<boolean>) => {
+      state.sidebarState.explorerExpanded = action.payload;
+    },
   },
 });
 
@@ -89,6 +185,23 @@ export const {
   updateSelectedFileContent,
   clearSelectedFile,
   clearFolderStructure,
+  setSearchQuery,
+  setSearchResults,
+  setSearchLoading,
+  setSearchError,
+  setSearchExpandedFiles,
+  toggleSearchFileExpansion,
+  clearSearchState,
+  setExplorerExpanded,
 } = mainSlice.actions;
+
+// Export types for use in components
+export type {
+  SearchMatch,
+  SearchFileResult,
+  SearchResults,
+  SearchState,
+  SidebarState,
+};
 
 export default mainSlice.reducer;
