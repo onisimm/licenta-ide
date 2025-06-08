@@ -107,6 +107,11 @@ const renderer = {
     ipcRenderer.on('menu-open-file', listener);
     return () => ipcRenderer.removeListener('menu-open-file', listener);
   },
+  onMenuCloseFile: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-close-file', listener);
+    return () => ipcRenderer.removeListener('menu-close-file', listener);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);

@@ -241,6 +241,14 @@ export const ExplorerSection = memo(() => {
     }
   }, [dispatch]);
 
+  useEffect(() => {
+    const unsubscribeOpen = window.electron.onMenuOpenFile?.(openFolder);
+
+    return () => {
+      unsubscribeOpen?.();
+    };
+  }, [openFolder]);
+
   const handleUpdateTreeItem = useCallback(
     (path: string, updates: Partial<TFolderTree>) => {
       // If we're updating children, mark them as git ignored too

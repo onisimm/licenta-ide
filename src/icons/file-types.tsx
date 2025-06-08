@@ -631,6 +631,10 @@ export const getFileIcon = (
       return <JavaIcon />;
     case 'cs':
       return <CsharpIcon />;
+    case 'cxx':
+    case 'cc':
+    case 'h':
+    case 'hpp':
     case 'cpp':
       return <CppIcon />;
     case 'c':

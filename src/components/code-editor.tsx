@@ -4,7 +4,10 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
 import { useAppSelector, useAppDispatch } from '../shared/hooks';
-import { updateSelectedFileContent } from '../shared/rdx-slice';
+import {
+  updateSelectedFileContent,
+  clearSelectedFile,
+} from '../shared/rdx-slice';
 import type { RootState } from '../shared/store';
 import loader from '@monaco-editor/loader';
 
@@ -189,19 +192,68 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       }
     }, [selectedFile, isSaving, dispatch]);
 
+    // Close file function
+    const closeFile = useCallback(() => {
+      if (!selectedFile) {
+        console.warn('No file selected to close');
+        return;
+      }
+
+      // Check if file has unsaved changes
+      const currentContent = editorRef.current?.getValue();
+      const hasUnsavedChanges = currentContent !== selectedFile.content;
+
+      if (hasUnsavedChanges) {
+        // Ask user if they want to save before closing
+        const shouldSave = window.confirm(
+          `The file "${selectedFile.name}" has unsaved changes. Do you want to save before closing?`,
+        );
+
+        if (shouldSave) {
+          // Save first, then close
+          saveFile()
+            .then(() => {
+              dispatch(clearSelectedFile());
+              console.log('File saved and closed:', selectedFile.name);
+            })
+            .catch(error => {
+              console.error('Error saving before close:', error);
+              // Ask if they want to close without saving
+              const forceClose = window.confirm(
+                'Failed to save the file. Do you want to close without saving?',
+              );
+              if (forceClose) {
+                dispatch(clearSelectedFile());
+                console.log('File closed without saving:', selectedFile.name);
+              }
+            });
+        } else {
+          // Ask for confirmation to close without saving
+          const confirmClose = window.confirm(
+            'Are you sure you want to close without saving your changes?',
+          );
+          if (confirmClose) {
+            dispatch(clearSelectedFile());
+            console.log('File closed without saving:', selectedFile.name);
+          }
+        }
+      } else {
+        // No unsaved changes, close directly
+        dispatch(clearSelectedFile());
+        console.log('File closed:', selectedFile.name);
+      }
+    }, [selectedFile, dispatch, saveFile]);
+
     // Menu event listeners
     useEffect(() => {
       const unsubscribeSave = window.electron.onMenuSaveFile?.(saveFile);
-      const unsubscribeOpen = window.electron.onMenuOpenFile?.(() => {
-        // You could implement open file from menu here if needed
-        console.log('Open file from menu');
-      });
+      const unsubscribeClose = window.electron.onMenuCloseFile?.(closeFile);
 
       return () => {
         unsubscribeSave?.();
-        unsubscribeOpen?.();
+        unsubscribeClose?.();
       };
-    }, [saveFile]);
+    }, [saveFile, closeFile]);
 
     // More aggressive global error handling
     useEffect(() => {
@@ -403,6 +455,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
                 saveFile();
               } catch (error) {
                 logError('Monaco Save Command', error);
+              }
+            },
+          );
+
+          editor.addCommand(
+            monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW,
+            () => {
+              try {
+                closeFile();
+              } catch (error) {
+                logError('Monaco Close Command', error);
               }
             },
           );

@@ -513,6 +513,15 @@ const createMenu = () => {
             }
           },
         },
+        {
+          label: 'Close File',
+          accelerator: 'CmdOrCtrl+W',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-close-file');
+            }
+          },
+        },
         { type: 'separator' },
         {
           label: 'Save File',
