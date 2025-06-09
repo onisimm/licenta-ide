@@ -464,7 +464,7 @@ export const SearchSection: React.FC = () => {
           <TextField
             fullWidth
             size="small"
-            placeholder="Search for text in files..."
+            placeholder="Enter text..."
             value={searchQuery}
             onChange={handleSearchChange}
             InputProps={{

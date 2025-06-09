@@ -828,7 +828,8 @@ const createWindow = () => {
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
-    frame: true, // Frameless window
+    frame: false, // Frameless window
+    titleBarStyle: 'hiddenInset',
   });
 
   // Add error handling for the webContents

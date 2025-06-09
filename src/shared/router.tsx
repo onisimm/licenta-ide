@@ -2,6 +2,7 @@ import { createHashRouter, Navigate } from 'react-router-dom';
 import MainComponent from '../screens/main';
 import { EmptySection, ExplorerSection } from '../sidebar-routes/explorer';
 import { SearchSection } from '../components/search-section';
+import { SettingsSection } from '../sidebar-routes/settings';
 
 export default createHashRouter([
   {
@@ -30,12 +31,16 @@ export default createHashRouter([
         element: <EmptySection />,
       },
       {
+        path: 'aichat',
+        element: <EmptySection />,
+      },
+      {
         path: 'profile',
         element: <EmptySection />,
       },
       {
         path: 'settings',
-        element: <EmptySection />,
+        element: <SettingsSection />,
       },
     ],
   },

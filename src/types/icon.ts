@@ -10,7 +10,7 @@ export enum IconListName {
   files = 'files',
   search = 'search',
   source = 'source',
-  extension = 'extension',
+  aichat = 'aichat',
   profile = 'profile',
   settings = 'settings',
 }
