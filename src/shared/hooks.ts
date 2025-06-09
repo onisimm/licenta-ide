@@ -7,12 +7,28 @@ import {
   setSelectedFile,
   clearSelectedFile,
   updateSelectedFileContent,
+  setAppTitle,
 } from './rdx-slice';
 import { logError } from './utils';
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 export const useAppSelector = useSelector.withTypes<RootState>();
+
+// Hook for app title operations
+export const useAppTitle = () => {
+  const dispatch = useAppDispatch();
+  const title = useAppSelector(state => state.main.appState.title);
+
+  const updateTitle = useCallback(
+    (newTitle: string) => {
+      dispatch(setAppTitle(newTitle));
+    },
+    [dispatch],
+  );
+
+  return { title, updateTitle };
+};
 
 // Comprehensive hook for all file and folder operations
 export const useProjectOperations = () => {

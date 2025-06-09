@@ -43,10 +43,16 @@ interface SidebarState {
   explorerExpanded: boolean; // Root folder expansion state
 }
 
+// App state for application-level settings
+interface AppState {
+  title: string;
+}
+
 // Updated main state interface
 interface IMainStateWithPersistence extends IMainState {
   searchState: SearchState;
   sidebarState: SidebarState;
+  appState: AppState;
 }
 
 // Define the initial state using that type
@@ -63,6 +69,9 @@ const initialState: IMainStateWithPersistence = {
   },
   sidebarState: {
     explorerExpanded: true,
+  },
+  appState: {
+    title: 'SEditor',
   },
 };
 
@@ -174,6 +183,10 @@ export const mainSlice = createSlice({
     setExplorerExpanded: (state, action: PayloadAction<boolean>) => {
       state.sidebarState.explorerExpanded = action.payload;
     },
+    // App state actions
+    setAppTitle: (state, action: PayloadAction<string>) => {
+      state.appState.title = action.payload;
+    },
   },
 });
 
@@ -193,6 +206,7 @@ export const {
   toggleSearchFileExpansion,
   clearSearchState,
   setExplorerExpanded,
+  setAppTitle,
 } = mainSlice.actions;
 
 // Export types for use in components
@@ -202,6 +216,7 @@ export type {
   SearchResults,
   SearchState,
   SidebarState,
+  AppState,
 };
 
 export default mainSlice.reducer;

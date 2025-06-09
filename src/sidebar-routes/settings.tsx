@@ -1,0 +1,135 @@
+import { memo, useState, useCallback } from 'react';
+import {
+  Box,
+  styled,
+  Typography,
+  TextField,
+  Button,
+  Paper,
+  Divider,
+} from '@mui/material';
+import { useAppTitle } from '../shared/hooks';
+
+const SettingsContainer = styled(Box)(({ theme }) => ({
+  height: '100%',
+  padding: theme.spacing(2),
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(2),
+}));
+
+const SettingsPanel = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(2),
+}));
+
+const SectionTitle = styled(Typography)(({ theme }) => ({
+  fontSize: '14px',
+  fontWeight: 600,
+  color: theme.palette.text.secondary,
+  marginBottom: theme.spacing(1),
+}));
+
+const FieldContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(1),
+}));
+
+const ButtonContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: theme.spacing(1),
+  justifyContent: 'flex-end',
+}));
+
+export const SettingsSection = memo(() => {
+  const { title, updateTitle } = useAppTitle();
+  const [tempTitle, setTempTitle] = useState(title);
+
+  const handleTitleChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTempTitle(event.target.value);
+    },
+    [],
+  );
+
+  const handleSave = useCallback(() => {
+    updateTitle(tempTitle);
+  }, [tempTitle, updateTitle]);
+
+  const handleReset = useCallback(() => {
+    setTempTitle(title);
+  }, [title]);
+
+  const handleResetToDefault = useCallback(() => {
+    const defaultTitle = 'SEditor';
+    setTempTitle(defaultTitle);
+    updateTitle(defaultTitle);
+  }, [updateTitle]);
+
+  const hasChanges = tempTitle !== title;
+
+  return (
+    <SettingsContainer>
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        Settings
+      </Typography>
+
+      <SettingsPanel elevation={1}>
+        <SectionTitle>Application</SectionTitle>
+        <FieldContainer>
+          <Typography variant="body2" color="text.secondary">
+            Application Title
+          </Typography>
+          <TextField
+            size="small"
+            value={tempTitle}
+            onChange={handleTitleChange}
+            placeholder="Enter application title"
+            fullWidth
+            variant="outlined"
+            helperText="This title will appear in the header bar"
+          />
+          <ButtonContainer>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleResetToDefault}
+              color="secondary">
+              Reset to Default
+            </Button>
+            {hasChanges && (
+              <>
+                <Button size="small" variant="outlined" onClick={handleReset}>
+                  Cancel
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleSave}
+                  color="primary">
+                  Save
+                </Button>
+              </>
+            )}
+          </ButtonContainer>
+        </FieldContainer>
+      </SettingsPanel>
+
+      <SettingsPanel elevation={1}>
+        <SectionTitle>About</SectionTitle>
+        <Typography variant="body2" color="text.secondary">
+          Current Title: <strong>{title}</strong>
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          This editor allows you to customize the application title and other
+          settings.
+        </Typography>
+      </SettingsPanel>
+    </SettingsContainer>
+  );
+});
+
+export default SettingsSection;
