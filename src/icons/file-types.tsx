@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { SVGProps } from 'react';
+import { getFileExtension, hasFileIcon } from '../constants/languages';
 import { IconProps } from '../types/icon';
-import type { SVGProps } from 'react';
 
 const iconSize = 16;
 
@@ -586,7 +586,7 @@ export const DefaultFileIcon = ({ color = '#6E6E6E' }: { color?: string }) => (
   </svg>
 );
 
-// File icon resolver
+// File icon resolver - updated to use centralized constants
 export const getFileIcon = (
   fileName: string,
   isDirectory: boolean,
@@ -596,73 +596,53 @@ export const getFileIcon = (
     return isOpen ? <FolderOpenIcon /> : <FolderIcon />;
   }
 
-  const extension = fileName.split('.').pop()?.toLowerCase();
+  const extension = getFileExtension(fileName);
 
-  switch (extension) {
-    case 'js':
-      return <JavaScriptIcon />;
-    case 'ts':
-      return <TypeScriptIcon />;
-    case 'jsx':
-    case 'tsx':
-      return <ReactIcon />;
-    case 'json':
-      return <JSONIcon />;
-    case 'css':
-    case 'scss':
-    case 'sass':
-      return <CSSIcon />;
-    case 'html':
-    case 'htm':
-      return <HTMLIcon />;
-    case 'md':
-    case 'markdown':
-      return <MarkdownIcon />;
-    case 'less':
-      return <LessIcon />;
-    case 'xml':
-      return <XMLIcon />;
-    case 'yml':
-    case 'yaml':
-      return <YMLIcon />;
-    case 'py':
-      return <PythonIcon />;
-    case 'java':
-      return <JavaIcon />;
-    case 'cs':
-      return <CsharpIcon />;
-    case 'cxx':
-    case 'cc':
-    case 'h':
-    case 'hpp':
-    case 'cpp':
-      return <CppIcon />;
-    case 'c':
-      return <CIcon />;
-    case 'rb':
-      return <RubyIcon />;
-    case 'php':
-      return <PHPIcon />;
-    case 'go':
-      return <GoIcon />;
-    case 'rs':
-      return <RustIcon />;
-    case 'swift':
-      return <SwiftIcon />;
-    case 'kt':
-      return <KotlinIcon />;
-    case 'scala':
-      return <ScalaIcon />;
-    case 'sh':
-    case 'ps1':
-      return <PowershellIcon />;
-    case 'sql':
-      return <SQLIcon />;
-    case 'dockerfile':
-      return <DockerIcon />;
-    case 'txt':
-      return <TxtIcon />;
-    default:
-      return <DefaultFileIcon />;
+  // Use centralized check for whether file has an icon
+  if (!hasFileIcon(fileName)) {
+    return <DefaultFileIcon />;
   }
+
+  // Icon mapping based on extension
+  const iconMap: Record<string, React.ReactElement> = {
+    js: <JavaScriptIcon />,
+    ts: <TypeScriptIcon />,
+    jsx: <ReactIcon />,
+    tsx: <ReactIcon />,
+    json: <JSONIcon />,
+    css: <CSSIcon />,
+    scss: <CSSIcon />,
+    sass: <CSSIcon />,
+    html: <HTMLIcon />,
+    htm: <HTMLIcon />,
+    md: <MarkdownIcon />,
+    markdown: <MarkdownIcon />,
+    less: <LessIcon />,
+    xml: <XMLIcon />,
+    yml: <YMLIcon />,
+    yaml: <YMLIcon />,
+    py: <PythonIcon />,
+    java: <JavaIcon />,
+    cs: <CsharpIcon />,
+    cxx: <CppIcon />,
+    cc: <CppIcon />,
+    h: <CppIcon />,
+    hpp: <CppIcon />,
+    cpp: <CppIcon />,
+    c: <CIcon />,
+    rb: <RubyIcon />,
+    php: <PHPIcon />,
+    go: <GoIcon />,
+    rs: <RustIcon />,
+    swift: <SwiftIcon />,
+    kt: <KotlinIcon />,
+    scala: <ScalaIcon />,
+    sh: <PowershellIcon />,
+    ps1: <PowershellIcon />,
+    sql: <SQLIcon />,
+    dockerfile: <DockerIcon />,
+    txt: <TxtIcon />,
+  };
+
+  return iconMap[extension] || <DefaultFileIcon />;
 };

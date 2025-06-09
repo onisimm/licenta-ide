@@ -12,6 +12,7 @@ import { logError, normalizeError } from '../shared/utils';
 import { useProjectOperations, useAppDispatch } from '../shared/hooks';
 import { updateSelectedFileContent } from '../shared/rdx-slice';
 import loader from '@monaco-editor/loader';
+import { getMonacoLanguage } from '../constants/languages';
 
 loader.config({ monaco });
 
@@ -67,43 +68,6 @@ const LoadingText = styled(Typography)(({ theme }) => ({
   fontSize: '14px',
   color: theme.palette.text.secondary,
 }));
-
-// Helper function to normalize language for Monaco
-const getMonacoLanguage = (language: string): string => {
-  const languageMap: Record<string, string> = {
-    javascript: 'javascript',
-    typescript: 'typescript',
-    jsx: 'javascript', // Use javascript for JSX
-    tsx: 'typescript', // Use typescript for TSX
-    json: 'json',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    less: 'less',
-    xml: 'xml',
-    yaml: 'yaml',
-    markdown: 'markdown',
-    python: 'python',
-    java: 'java',
-    csharp: 'csharp',
-    cpp: 'cpp',
-    c: 'c',
-    php: 'php',
-    ruby: 'ruby',
-    go: 'go',
-    rust: 'rust',
-    swift: 'swift',
-    kotlin: 'kotlin',
-    scala: 'scala',
-    shell: 'shell',
-    powershell: 'powershell',
-    sql: 'sql',
-    dockerfile: 'dockerfile',
-    plaintext: 'plaintext',
-  };
-
-  return languageMap[language] || 'plaintext';
-};
 
 export const CodeEditor: React.FC<CodeEditorProps> = memo(
   ({ value, language, fileName, onChange, readOnly = false }) => {
