@@ -81,15 +81,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       useProjectOperations();
     const dispatch = useAppDispatch();
 
+    // Track if this is an empty/placeholder state
+    const isEmpty = !selectedFile || !value;
+
     // Editor content getter function
     const getEditorContent = useCallback(() => {
       return editorRef.current?.getValue();
     }, []);
 
-    // Save file function using the hook
+    // Save file function using the hook - only if not empty
     const handleSaveFile = useCallback(async () => {
-      if (isSaving) {
-        console.log('Save already in progress');
+      if (isSaving || isEmpty) {
+        console.log('Save skipped - empty state or already saving');
         return;
       }
 
@@ -103,24 +106,26 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       } finally {
         setIsSaving(false);
       }
-    }, [saveFile, getEditorContent, isSaving]);
+    }, [saveFile, getEditorContent, isSaving, isEmpty]);
 
-    // Close file function using the hook
+    // Close file function using the hook - only if not empty
     const handleCloseFile = useCallback(() => {
-      closeFile(getEditorContent);
-    }, [closeFile, getEditorContent]);
+      if (!isEmpty) {
+        closeFile(getEditorContent);
+      }
+    }, [closeFile, getEditorContent, isEmpty]);
 
     // Close folder function using the hook
     const handleCloseFolder = useCallback(() => {
       closeFolder(getEditorContent);
     }, [closeFolder, getEditorContent]);
 
-    // Real-time content change tracking
+    // Real-time content change tracking - only if not empty
     const handleEditorChange = useCallback(
       (value: string | undefined) => {
         try {
-          // Update Redux state with the new content for real-time tracking
-          if (value !== undefined && selectedFile) {
+          // Only update Redux state if we have a real file selected
+          if (value !== undefined && selectedFile && !isEmpty) {
             dispatch(updateSelectedFileContent(value));
           }
 
@@ -133,7 +138,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           setErrorMessage(`Change error: ${error}`);
         }
       },
-      [selectedFile, dispatch, onChange],
+      [selectedFile, dispatch, onChange, isEmpty],
     );
 
     // Menu event listeners
@@ -148,55 +153,55 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       };
     }, [handleSaveFile, handleCloseFile]);
 
-    // Listen for scroll to line messages from search results
-    useEffect(() => {
-      const handleScrollToLine = (event: MessageEvent) => {
-        if (
-          event.data.type === 'SCROLL_TO_LINE' &&
-          event.data.lineNumber &&
-          editorRef.current
-        ) {
-          const lineNumber = event.data.lineNumber;
-          console.log('Scrolling to line:', lineNumber);
+    // Handle scrolling to line when Monaco is ready - ULTRA FAST
+    const handleScrollToLine = useCallback((lineNumber: number) => {
+      if (!editorRef.current) return;
 
-          const scrollToLine = () => {
-            if (editorRef.current) {
-              // Get the model to ensure content is loaded
-              const model = editorRef.current.getModel();
-              if (model && model.getLineCount() >= lineNumber) {
-                // Scroll to the line and highlight it
-                editorRef.current.revealLineInCenter(lineNumber);
-                editorRef.current.setPosition({ lineNumber, column: 1 });
-                editorRef.current.focus();
-
-                // Add selection to highlight the line temporarily
-                editorRef.current.setSelection({
-                  startLineNumber: lineNumber,
-                  startColumn: 1,
-                  endLineNumber: lineNumber,
-                  endColumn: model.getLineMaxColumn(lineNumber),
-                });
-
-                console.log('Successfully scrolled to line:', lineNumber);
-              } else {
-                console.log(
-                  'Model not ready or line number out of range, retrying...',
-                );
-                // Retry after a short delay if model isn't ready
-                setTimeout(scrollToLine, 50);
-              }
-            }
-          };
-
-          scrollToLine();
+      const scrollToLineImpl = () => {
+        if (editorRef.current) {
+          const model = editorRef.current.getModel();
+          if (model && model.getLineCount() >= lineNumber) {
+            // Immediate scroll with no logging for maximum performance
+            editorRef.current.revealLineInCenter(lineNumber);
+            editorRef.current.setPosition({ lineNumber, column: 1 });
+            editorRef.current.focus();
+            editorRef.current.setSelection({
+              startLineNumber: lineNumber,
+              startColumn: 1,
+              endLineNumber: lineNumber,
+              endColumn: model.getLineMaxColumn(lineNumber),
+            });
+          } else {
+            // Quick retry
+            requestAnimationFrame(scrollToLineImpl);
+          }
         }
       };
 
-      window.addEventListener('message', handleScrollToLine);
-      return () => {
-        window.removeEventListener('message', handleScrollToLine);
-      };
+      scrollToLineImpl();
     }, []);
+
+    // Listen for custom scroll events - NO REDUX DEPENDENCY
+    useEffect(() => {
+      const handleCustomScrollEvent = (event: CustomEvent) => {
+        const { lineNumber } = event.detail;
+        if (lineNumber && editorRef.current) {
+          handleScrollToLine(lineNumber);
+        }
+      };
+
+      window.addEventListener(
+        'monaco-scroll-to-line',
+        handleCustomScrollEvent as EventListener,
+      );
+
+      return () => {
+        window.removeEventListener(
+          'monaco-scroll-to-line',
+          handleCustomScrollEvent as EventListener,
+        );
+      };
+    }, [handleScrollToLine]);
 
     // More aggressive global error handling
     useEffect(() => {
@@ -437,6 +442,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
         }
 
         console.log('Monaco Editor mounted successfully');
+
+        // Monaco is now ready to receive scroll commands if needed
       } catch (error) {
         console.error('Error configuring Monaco Editor:', error);
         logError('Monaco Editor configuration', error);

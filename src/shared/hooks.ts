@@ -270,26 +270,35 @@ export const useProjectOperations = () => {
     [folderStructure],
   );
 
-  // Open file at specific line
+  // Open file at specific line - ULTRA OPTIMIZED (no Redux state for line)
   const openFileAtLine = useCallback(
     async (filePath: string, lineNumber: number) => {
       try {
         console.log('Opening file at line:', filePath, 'line:', lineNumber);
 
-        // Read the file first
+        // Read the file
         const fileData = await window.electron.readFile(filePath);
 
         if (fileData) {
-          // Set the selected file in Redux
+          // Set the selected file normally (no Redux line state)
           dispatch(setSelectedFile(fileData));
+
+          // Handle line positioning directly via a custom event
+          // This avoids Redux state changes and re-renders
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent('monaco-scroll-to-line', {
+                detail: { lineNumber },
+              }),
+            );
+          }, 0);
+
           console.log(
             'File opened at line:',
             fileData.name,
             'line:',
             lineNumber,
           );
-
-          // Return line number for the editor to scroll to
           return { file: fileData, lineNumber };
         }
 
