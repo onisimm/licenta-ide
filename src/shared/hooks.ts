@@ -8,6 +8,13 @@ import {
   clearSelectedFile,
   updateSelectedFileContent,
   setAppTitle,
+  // New tab actions
+  openFileInTab,
+  switchToTab,
+  closeTab,
+  updateActiveFileContent,
+  markTabAsSaved,
+  closeAllTabs,
 } from './rdx-slice';
 import { logError } from './utils';
 
@@ -35,6 +42,16 @@ export const useProjectOperations = () => {
   const dispatch = useAppDispatch();
   const folderStructure = useAppSelector(state => state.main.folderStructure);
   const selectedFile = useAppSelector(state => state.main.selectedFile);
+  const { openFiles, activeFileIndex } = useAppSelector(state => ({
+    openFiles: state.main.openFiles,
+    activeFileIndex: state.main.activeFileIndex,
+  }));
+
+  // Get the currently active file
+  const activeFile =
+    openFiles.length > 0 && activeFileIndex >= 0
+      ? openFiles[activeFileIndex]
+      : null;
 
   // Open file or folder operation
   const openFileOrFolder = useCallback(async () => {
@@ -51,9 +68,9 @@ export const useProjectOperations = () => {
         console.log('Folder opened:', result.folder.name);
         return { type: 'folder', data: result.folder };
       } else if (result.type === 'file') {
-        // Handle file selection - set the selected file but don't change folder structure
-        dispatch(setSelectedFile(result.file));
-        console.log('File opened:', result.file.name);
+        // Handle file selection - open in tab system
+        dispatch(openFileInTab(result.file));
+        console.log('File opened in tab:', result.file.name);
         return { type: 'file', data: result.file };
       }
 
@@ -65,12 +82,12 @@ export const useProjectOperations = () => {
     }
   }, [dispatch]);
 
-  // Save file operation
+  // Save file operation - updated for tabs
   const saveFile = useCallback(
     async (editorContentGetter: () => string | undefined) => {
-      if (!selectedFile || !selectedFile.path) {
-        console.warn('No file selected to save');
-        throw new Error('No file selected to save');
+      if (!activeFile || !activeFile.path) {
+        console.warn('No active file to save');
+        throw new Error('No active file to save');
       }
 
       // Get current content directly from Monaco editor
@@ -83,13 +100,13 @@ export const useProjectOperations = () => {
       try {
         console.log(
           'Saving file:',
-          selectedFile.path,
+          activeFile.path,
           'with content length:',
           currentContent.length,
         );
 
         const result = await window.electron.saveFile(
-          selectedFile.path,
+          activeFile.path,
           currentContent,
         );
 
@@ -99,7 +116,7 @@ export const useProjectOperations = () => {
           // Verify the save by reading the file back
           try {
             const verifyResult = await window.electron.readFile(
-              selectedFile.path,
+              activeFile.path,
             );
             if (verifyResult.content === currentContent) {
               console.log(
@@ -120,8 +137,9 @@ export const useProjectOperations = () => {
             console.warn('Could not verify save:', verifyError);
           }
 
-          // Update Redux state with the saved content to keep it in sync
-          dispatch(updateSelectedFileContent(currentContent));
+          // Mark the tab as saved and update content
+          dispatch(markTabAsSaved(activeFileIndex));
+          dispatch(updateActiveFileContent(currentContent));
           return result;
         }
 
@@ -135,33 +153,35 @@ export const useProjectOperations = () => {
         throw new Error(`Error saving file: ${errorMessage}`);
       }
     },
-    [selectedFile, dispatch],
+    [activeFile, activeFileIndex, dispatch],
   );
 
-  // Close file operation
+  // Close file operation - updated for tabs
   const closeFile = useCallback(
     (editorContentGetter: () => string | undefined) => {
-      if (!selectedFile) {
-        console.warn('No file selected to close');
+      if (!activeFile) {
+        console.warn('No active file to close');
         return;
       }
 
       // Check if file has unsaved changes
       const currentContent = editorContentGetter();
-      const hasUnsavedChanges = currentContent !== selectedFile.content;
+      const hasUnsavedChanges =
+        activeFile.hasUnsavedChanges ||
+        currentContent !== activeFile.originalContent;
 
       if (hasUnsavedChanges) {
         // Ask user if they want to save before closing
         const shouldSave = window.confirm(
-          `The file "${selectedFile.name}" has unsaved changes. Do you want to save before closing?`,
+          `The file "${activeFile.name}" has unsaved changes. Do you want to save before closing?`,
         );
 
         if (shouldSave) {
           // Save first, then close
           saveFile(editorContentGetter)
             .then(() => {
-              dispatch(clearSelectedFile());
-              console.log('File saved and closed:', selectedFile.name);
+              dispatch(closeTab(activeFileIndex));
+              console.log('File saved and closed:', activeFile.name);
             })
             .catch(error => {
               console.error('Error saving before close:', error);
@@ -170,8 +190,8 @@ export const useProjectOperations = () => {
                 'Failed to save the file. Do you want to close without saving?',
               );
               if (forceClose) {
-                dispatch(clearSelectedFile());
-                console.log('File closed without saving:', selectedFile.name);
+                dispatch(closeTab(activeFileIndex));
+                console.log('File closed without saving:', activeFile.name);
               }
             });
         } else {
@@ -180,20 +200,20 @@ export const useProjectOperations = () => {
             'Are you sure you want to close without saving your changes?',
           );
           if (confirmClose) {
-            dispatch(clearSelectedFile());
-            console.log('File closed without saving:', selectedFile.name);
+            dispatch(closeTab(activeFileIndex));
+            console.log('File closed without saving:', activeFile.name);
           }
         }
       } else {
         // No unsaved changes, close directly
-        dispatch(clearSelectedFile());
-        console.log('File closed:', selectedFile.name);
+        dispatch(closeTab(activeFileIndex));
+        console.log('File closed:', activeFile.name);
       }
     },
-    [selectedFile, dispatch, saveFile],
+    [activeFile, activeFileIndex, dispatch, saveFile],
   );
 
-  // Close folder operation
+  // Close folder operation - updated for tabs
   const closeFolder = useCallback(
     (editorContentGetter?: () => string | undefined) => {
       const hasFolder =
@@ -204,24 +224,19 @@ export const useProjectOperations = () => {
         return;
       }
 
-      // Check if file has unsaved changes before closing folder
-      let hasUnsavedChanges = false;
-
-      if (selectedFile && editorContentGetter) {
-        const currentContent = editorContentGetter();
-        hasUnsavedChanges = currentContent !== selectedFile.content;
-      }
+      // Check if any files have unsaved changes
+      const hasUnsavedChanges = openFiles.some(file => file.hasUnsavedChanges);
 
       if (hasUnsavedChanges) {
         const shouldContinue = window.confirm(
-          `The file "${selectedFile?.name}" has unsaved changes. Closing the folder "${folderStructure.name}" will close all files. Do you want to continue?`,
+          `Some files have unsaved changes. Closing the folder "${folderStructure.name}" will close all files. Do you want to continue?`,
         );
 
         if (!shouldContinue) {
           return; // User cancelled
         }
-      } else if (selectedFile) {
-        // No unsaved changes but file is open
+      } else if (openFiles.length > 0) {
+        // No unsaved changes but files are open
         const shouldContinue = window.confirm(
           `Closing the folder "${folderStructure.name}" will close all open files. Do you want to continue?`,
         );
@@ -231,11 +246,11 @@ export const useProjectOperations = () => {
         }
       }
 
-      // Clear the entire folder structure
+      // Clear the entire folder structure and all tabs
       dispatch(clearFolderStructure());
       console.log('Folder closed:', folderStructure.name);
     },
-    [folderStructure, selectedFile, dispatch],
+    [folderStructure, openFiles, dispatch],
   );
 
   // Search in folder operation
@@ -270,7 +285,7 @@ export const useProjectOperations = () => {
     [folderStructure],
   );
 
-  // Open file at specific line - ULTRA OPTIMIZED (no Redux state for line)
+  // Open file at specific line - ULTRA OPTIMIZED (updated for tabs)
   const openFileAtLine = useCallback(
     async (filePath: string, lineNumber: number) => {
       try {
@@ -280,8 +295,8 @@ export const useProjectOperations = () => {
         const fileData = await window.electron.readFile(filePath);
 
         if (fileData) {
-          // Set the selected file normally (no Redux line state)
-          dispatch(setSelectedFile(fileData));
+          // Open file in tab system
+          dispatch(openFileInTab(fileData));
 
           // Handle line positioning directly via a custom event
           // This avoids Redux state changes and re-renders
@@ -325,14 +340,22 @@ export const useProjectOperations = () => {
     hasFolder: folderStructure && Object.keys(folderStructure).length > 0,
     folderName: folderStructure?.name,
     folderPath: folderStructure?.root,
-    selectedFile,
+    selectedFile, // Keep for backward compatibility
     hasSelectedFile: !!selectedFile,
+    // New tab-related state
+    openFiles,
+    activeFileIndex,
+    activeFile,
+    hasOpenFiles: openFiles.length > 0,
 
     // Utility functions
     hasUnsavedChanges: (editorContentGetter: () => string | undefined) => {
-      if (!selectedFile) return false;
+      if (!activeFile) return false;
       const currentContent = editorContentGetter();
-      return currentContent !== selectedFile.content;
+      return (
+        activeFile.hasUnsavedChanges ||
+        currentContent !== activeFile.originalContent
+      );
     },
   };
 };

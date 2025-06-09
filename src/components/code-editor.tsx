@@ -10,7 +10,7 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
 import { useProjectOperations, useAppDispatch } from '../shared/hooks';
-import { updateSelectedFileContent } from '../shared/rdx-slice';
+import { updateActiveFileContent } from '../shared/rdx-slice';
 import loader from '@monaco-editor/loader';
 import { getMonacoLanguage } from '../constants/languages';
 
@@ -120,13 +120,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       closeFolder(getEditorContent);
     }, [closeFolder, getEditorContent]);
 
-    // Real-time content change tracking - only if not empty
+    // Real-time content change tracking - updated for tabs
     const handleEditorChange = useCallback(
       (value: string | undefined) => {
         try {
-          // Only update Redux state if we have a real file selected
+          // Update the active file content in tabs
           if (value !== undefined && selectedFile && !isEmpty) {
-            dispatch(updateSelectedFileContent(value));
+            dispatch(updateActiveFileContent(value));
           }
 
           // Call the original onChange callback
@@ -457,9 +457,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     if (hasError) {
       return (
         <EditorContainer>
-          <EditorHeader>
-            <FileName>{fileName}</FileName>
-          </EditorHeader>
           <EditorWrapper>
             <Box
               display="flex"
@@ -490,16 +487,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
 
     return (
       <EditorContainer>
-        <EditorHeader>
-          <FileName>
-            {fileName}
-            {isSaving && (
-              <Box component="span" ml={1}>
-                <CircularProgress size={12} />
-              </Box>
-            )}
-          </FileName>
-        </EditorHeader>
         <EditorWrapper>
           <Editor
             height="100%"

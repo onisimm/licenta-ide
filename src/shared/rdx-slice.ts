@@ -5,6 +5,7 @@ import {
   IMainState,
   TFolderTree,
   ISelectedFile,
+  IOpenFile,
 } from './types';
 
 // Search-related interfaces (moved from search-section.tsx)
@@ -58,8 +59,11 @@ interface IMainStateWithPersistence extends IMainState {
 // Define the initial state using that type
 const initialState: IMainStateWithPersistence = {
   folderStructure: {} as IFolderStructure,
-  selectedFile: null,
+  selectedFile: null, // Keep for backward compatibility
   isLoadingFile: false,
+  // New tab-related state
+  openFiles: [],
+  activeFileIndex: -1, // -1 means no file is active
   searchState: {
     query: '',
     results: null,
@@ -102,7 +106,7 @@ export const mainSlice = createSlice({
   reducers: {
     setFolderStructure: (state, action: PayloadAction<IFolderStructure>) => {
       state.folderStructure = action.payload;
-      // Clear selected file when folder changes
+      // Clear selected file when folder changes but keep tabs
       state.selectedFile = null;
     },
     updateTreeItem: (
@@ -138,7 +142,111 @@ export const mainSlice = createSlice({
       state.folderStructure = {} as IFolderStructure;
       state.selectedFile = null;
       state.isLoadingFile = false;
+      // Clear tabs when folder is closed
+      state.openFiles = [];
+      state.activeFileIndex = -1;
     },
+
+    // New tab-related actions
+    openFileInTab: (state, action: PayloadAction<ISelectedFile>) => {
+      const fileToOpen = action.payload;
+
+      // Check if file is already open
+      const existingIndex = state.openFiles.findIndex(
+        f => f.path === fileToOpen.path,
+      );
+
+      if (existingIndex >= 0) {
+        // File already open, just switch to it
+        state.activeFileIndex = existingIndex;
+        state.selectedFile = state.openFiles[existingIndex];
+      } else {
+        // Add new file to tabs
+        const newOpenFile: IOpenFile = {
+          ...fileToOpen,
+          hasUnsavedChanges: false,
+          originalContent: fileToOpen.content,
+        };
+
+        state.openFiles.push(newOpenFile);
+        state.activeFileIndex = state.openFiles.length - 1;
+        state.selectedFile = newOpenFile;
+      }
+
+      state.isLoadingFile = false;
+    },
+
+    switchToTab: (state, action: PayloadAction<number>) => {
+      const index = action.payload;
+      if (index >= 0 && index < state.openFiles.length) {
+        state.activeFileIndex = index;
+        state.selectedFile = state.openFiles[index];
+      }
+    },
+
+    closeTab: (state, action: PayloadAction<number>) => {
+      const indexToClose = action.payload;
+
+      if (indexToClose >= 0 && indexToClose < state.openFiles.length) {
+        // Remove the file from open files
+        state.openFiles.splice(indexToClose, 1);
+
+        // Adjust active index
+        if (state.openFiles.length === 0) {
+          // No files left
+          state.activeFileIndex = -1;
+          state.selectedFile = null;
+        } else if (indexToClose <= state.activeFileIndex) {
+          // If we closed the active tab or a tab before it
+          if (indexToClose === state.activeFileIndex) {
+            // Closed the active tab - switch to the next tab, or previous if it was the last
+            const newActiveIndex = Math.min(
+              indexToClose,
+              state.openFiles.length - 1,
+            );
+            state.activeFileIndex = newActiveIndex;
+            state.selectedFile = state.openFiles[newActiveIndex];
+          } else {
+            // Closed a tab before the active one - just adjust the index
+            state.activeFileIndex = state.activeFileIndex - 1;
+          }
+        }
+        // If we closed a tab after the active one, no adjustment needed
+      }
+    },
+
+    updateActiveFileContent: (state, action: PayloadAction<string>) => {
+      const newContent = action.payload;
+
+      // Update the active file in both places
+      if (state.selectedFile && state.activeFileIndex >= 0) {
+        state.selectedFile.content = newContent;
+
+        const activeFile = state.openFiles[state.activeFileIndex];
+        if (activeFile) {
+          activeFile.content = newContent;
+          // Mark as having unsaved changes if content differs from original
+          activeFile.hasUnsavedChanges =
+            newContent !== activeFile.originalContent;
+        }
+      }
+    },
+
+    markTabAsSaved: (state, action: PayloadAction<number>) => {
+      const tabIndex = action.payload;
+      if (tabIndex >= 0 && tabIndex < state.openFiles.length) {
+        const file = state.openFiles[tabIndex];
+        file.hasUnsavedChanges = false;
+        file.originalContent = file.content; // Update the original content
+      }
+    },
+
+    closeAllTabs: state => {
+      state.openFiles = [];
+      state.activeFileIndex = -1;
+      state.selectedFile = null;
+    },
+
     // Search state actions
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchState.query = action.payload;
@@ -198,6 +306,14 @@ export const {
   updateSelectedFileContent,
   clearSelectedFile,
   clearFolderStructure,
+  // New tab actions
+  openFileInTab,
+  switchToTab,
+  closeTab,
+  updateActiveFileContent,
+  markTabAsSaved,
+  closeAllTabs,
+  // Search actions
   setSearchQuery,
   setSearchResults,
   setSearchLoading,

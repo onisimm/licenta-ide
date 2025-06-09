@@ -9,7 +9,7 @@ import {
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
 import { useAppDispatch } from '../shared/hooks';
-import { setLoadingFile, setSelectedFile } from '../shared/rdx-slice';
+import { setLoadingFile, openFileInTab } from '../shared/rdx-slice';
 import { getErrorMessage, logError, normalizeError } from '../shared/utils';
 
 interface FileTreeProps {
@@ -299,8 +299,8 @@ export const FileTree: React.FC<FileTreeProps> = ({
             throw new Error('Invalid file data received');
           }
 
-          // Update selected file in Redux
-          dispatch(setSelectedFile(fileData));
+          // Open file in tab system instead of just setting selected file
+          dispatch(openFileInTab(fileData));
         } catch (fileError) {
           // Handle file reading errors
           logError('File loading', fileError);
