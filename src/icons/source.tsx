@@ -1,36 +1,27 @@
 import { IconProps } from '../types/icon';
 import { StyledSVG } from './styled-svg';
 
-export default function SourceIcon({ size = 25, color, ...props }: IconProps) {
-  return (
-    <StyledSVG
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 23 24"
-      style={{ fill: color }}
-      {...props}>
-      <path
-        fill={color}
-        d="M6.01 2c-1.93 0-3.5 1.57-3.5 3.5c0 1.58 1.06 2.903 2.5 3.337v7.16c-.001.179.027 1.781 1.174 2.931C6.892 19.64 7.84 20 9 20v2l4-3l-4-3v2c-1.823 0-1.984-1.534-1.99-2V8.837c1.44-.434 2.5-1.757 2.5-3.337c0-1.93-1.571-3.5-3.5-3.5m0 5c-.827 0-1.5-.673-1.5-1.5S5.183 4 6.01 4s1.5.673 1.5 1.5S6.837 7 6.01 7m13 8.163V7.997C19.005 6.391 17.933 4 15 4V2l-4 3l4 3V6c1.829 0 2.001 1.539 2.01 2v7.163c-1.44.434-2.5 1.757-2.5 3.337c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5c0-1.58-1.06-2.903-2.5-3.337m-1 4.837c-.827 0-1.5-.673-1.5-1.5s.673-1.5 1.5-1.5s1.5.673 1.5 1.5s-.673 1.5-1.5 1.5"></path>
-    </StyledSVG>
-  );
-}
-
-import React from 'react';
-import type { SVGProps } from 'react';
-
-export function BxGitCompare(props: SVGProps<SVGSVGElement>) {
+export default function GitIcon({
+  size = 25,
+  color = '#fafafa',
+  ...props
+}: IconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width={24}
-      height={24}
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       {...props}>
-      <path
-        fill="currentColor"
-        d="M6.01 2c-1.93 0-3.5 1.57-3.5 3.5c0 1.58 1.06 2.903 2.5 3.337v7.16c-.001.179.027 1.781 1.174 2.931C6.892 19.64 7.84 20 9 20v2l4-3l-4-3v2c-1.823 0-1.984-1.534-1.99-2V8.837c1.44-.434 2.5-1.757 2.5-3.337c0-1.93-1.571-3.5-3.5-3.5m0 5c-.827 0-1.5-.673-1.5-1.5S5.183 4 6.01 4s1.5.673 1.5 1.5S6.837 7 6.01 7m13 8.163V7.997C19.005 6.391 17.933 4 15 4V2l-4 3l4 3V6c1.829 0 2.001 1.539 2.01 2v7.163c-1.44.434-2.5 1.757-2.5 3.337c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5c0-1.58-1.06-2.903-2.5-3.337m-1 4.837c-.827 0-1.5-.673-1.5-1.5s.673-1.5 1.5-1.5s1.5.673 1.5 1.5s-.673 1.5-1.5 1.5"></path>
+      <g
+        fill="none"
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}>
+        <path d="M12 10a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3m0 8a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3m4.25-3.75a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3M12 10v5M8.25 4.75L10.5 7m2.75 2.75l1.5 1.5"></path>
+        <path d="M11.576 1.424a.6.6 0 0 1 .848 0l10.152 10.152a.6.6 0 0 1 0 .848L12.424 22.576a.6.6 0 0 1-.848 0L1.424 12.424a.6.6 0 0 1 0-.848z"></path>
+      </g>
     </svg>
   );
 }
