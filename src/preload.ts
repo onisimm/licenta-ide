@@ -117,6 +117,11 @@ const renderer = {
     ipcRenderer.on('menu-close-folder', listener);
     return () => ipcRenderer.removeListener('menu-close-folder', listener);
   },
+  onMenuQuickOpenFile: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-quick-open-file', listener);
+    return () => ipcRenderer.removeListener('menu-quick-open-file', listener);
+  },
   searchInFolder: async (folderPath: string, searchQuery: string) => {
     try {
       const result = await ipcRenderer.invoke(

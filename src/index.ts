@@ -762,6 +762,16 @@ const createMenu = () => {
           },
         },
         {
+          label: 'Quick Open File...',
+          accelerator: 'CmdOrCtrl+P',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-quick-open-file');
+            }
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Close File',
           accelerator: 'CmdOrCtrl+W',
           click: async () => {

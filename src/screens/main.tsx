@@ -3,6 +3,7 @@ import { Box, styled, Typography } from '@mui/material';
 import ContentSection from '../sections/content';
 import SidebarSection from '../sections/sidebar';
 import { useProjectOperations } from '../shared/hooks';
+import QuickFileOpener from '../components/quick-file-opener';
 
 const SIDEBAR_WIDTH_KEY = 'sidebar-width';
 const DEFAULT_SIDEBAR_WIDTH = 260;
@@ -38,6 +39,7 @@ const FooterContainer = styled(Box)(({ theme }) => ({
 
 const MainComponent = memo(() => {
   const { hasFolder, folderName } = useProjectOperations();
+  const [isQuickFileOpenerOpen, setIsQuickFileOpenerOpen] = useState(false);
 
   // Generate title based on folder state
   const title = hasFolder && folderName ? `SEditor — ${folderName}` : 'SEditor';
@@ -55,6 +57,48 @@ const MainComponent = memo(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
   }, []);
 
+  // Handle keyboard shortcuts for quick file opener
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Cmd+P (Mac) or Ctrl+P (Windows/Linux)
+      if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
+        // Only open if we have a folder and the modal isn't already open
+        if (hasFolder && !isQuickFileOpenerOpen) {
+          event.preventDefault();
+          setIsQuickFileOpenerOpen(true);
+        }
+      }
+    };
+
+    // Handle menu events from application menu
+    const handleMenuQuickOpen = () => {
+      if (hasFolder && !isQuickFileOpenerOpen) {
+        setIsQuickFileOpenerOpen(true);
+      }
+    };
+
+    // Add global keyboard event listener
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Add menu event listener if electron is available
+    let menuCleanup: (() => void) | undefined;
+    if (window.electron && window.electron.onMenuQuickOpenFile) {
+      menuCleanup = window.electron.onMenuQuickOpenFile(handleMenuQuickOpen);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (menuCleanup) {
+        menuCleanup();
+      }
+    };
+  }, [hasFolder, isQuickFileOpenerOpen]);
+
+  const handleCloseQuickFileOpener = useCallback(() => {
+    setIsQuickFileOpenerOpen(false);
+  }, []);
+
   return (
     <MainContainer>
       <HeaderContainer>
@@ -65,6 +109,12 @@ const MainComponent = memo(() => {
         <SidebarSection width={sidebarWidth} onResize={handleSidebarResize} />
       </BodyContainer>
       <FooterContainer />
+
+      {/* Quick File Opener Modal */}
+      <QuickFileOpener
+        open={isQuickFileOpenerOpen}
+        onClose={handleCloseQuickFileOpener}
+      />
     </MainContainer>
   );
 });

@@ -340,7 +340,8 @@ export const useProjectOperations = () => {
     hasFolder: folderStructure && Object.keys(folderStructure).length > 0,
     folderName: folderStructure?.name,
     folderPath: folderStructure?.root,
-    selectedFile, // Keep for backward compatibility
+    folderStructure,
+    selectedFile,
     hasSelectedFile: !!selectedFile,
     // New tab-related state
     openFiles,
