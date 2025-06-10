@@ -685,6 +685,33 @@ ipcMain.handle(
   },
 );
 
+// Set zoom level handler
+ipcMain.handle('set-zoom-level', async (event, zoomLevel: number) => {
+  try {
+    if (!mainWindow) {
+      console.error('No main window available for zoom');
+      return false;
+    }
+
+    if (typeof zoomLevel !== 'number' || zoomLevel < 0.5 || zoomLevel > 2.0) {
+      throw new Error('Invalid zoom level. Must be between 0.5 and 2.0');
+    }
+
+    // Set the zoom level on the main window
+    mainWindow.webContents.setZoomFactor(zoomLevel);
+    return true;
+  } catch (error) {
+    console.error('❌ Error setting zoom level:', error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown zoom error';
+    throw new Error(`Failed to set zoom level: ${errorMessage}`);
+  }
+});
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({

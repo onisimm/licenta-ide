@@ -130,6 +130,15 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  setZoomLevel: async (zoomLevel: number) => {
+    try {
+      const result = await ipcRenderer.invoke('set-zoom-level', zoomLevel);
+      return result;
+    } catch (error) {
+      console.error('Error in setZoomLevel preload:', error);
+      throw normalizeError(error);
+    }
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);

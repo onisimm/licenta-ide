@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
 import {
   Box,
   styled,
@@ -8,6 +8,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Button,
 } from '@mui/material';
 import { useThemeToggle } from '../theme/themeProvider';
 import { getAvailableThemes } from '../constants/colors';
@@ -42,6 +43,10 @@ const FieldContainer = styled(Box)(({ theme }) => ({
 
 export const SettingsSection = memo(() => {
   const { currentTheme, setThemeByName } = useThemeToggle();
+  const [zoomLevel, setZoomLevel] = useState(() => {
+    const saved = localStorage.getItem('zoom-level');
+    return saved ? parseFloat(saved) : 1.0;
+  });
 
   const handleThemeChange = useCallback(
     (event: any) => {
@@ -51,7 +56,56 @@ export const SettingsSection = memo(() => {
     [setThemeByName],
   );
 
+  const handleZoomChange = useCallback((event: any) => {
+    const zoom = parseFloat(event.target.value);
+    setZoomLevel(zoom);
+    localStorage.setItem('zoom-level', zoom.toString());
+
+    // Apply zoom using Electron's API if available
+    if (window.electron?.setZoomLevel) {
+      window.electron.setZoomLevel(zoom);
+    } else {
+      // Fallback for web or if Electron API is not available
+      document.body.style.zoom = zoom.toString();
+    }
+  }, []);
+
+  const handleResetZoom = useCallback(() => {
+    const defaultZoom = 1.0;
+    setZoomLevel(defaultZoom);
+    localStorage.setItem('zoom-level', defaultZoom.toString());
+
+    if (window.electron?.setZoomLevel) {
+      window.electron.setZoomLevel(defaultZoom);
+    } else {
+      document.body.style.zoom = defaultZoom.toString();
+    }
+  }, []);
+
+  // Apply saved zoom level on component mount
+  useEffect(() => {
+    if (window.electron?.setZoomLevel) {
+      window.electron.setZoomLevel(zoomLevel);
+    } else {
+      document.body.style.zoom = zoomLevel.toString();
+    }
+  }, []);
+
   const availableThemes = getAvailableThemes();
+
+  const zoomOptions = [
+    { value: 0.5, label: '50%' },
+    { value: 0.6, label: '60%' },
+    { value: 0.7, label: '70%' },
+    { value: 0.8, label: '80%' },
+    { value: 0.9, label: '90%' },
+    { value: 1.0, label: '100%' },
+    { value: 1.1, label: '110%' },
+    { value: 1.25, label: '125%' },
+    { value: 1.5, label: '150%' },
+    { value: 1.75, label: '175%' },
+    { value: 2.0, label: '200%' },
+  ];
 
   return (
     <SettingsContainer>
@@ -83,6 +137,44 @@ export const SettingsSection = memo(() => {
             Choose from {availableThemes.length} available themes
           </Typography>
         </FieldContainer>
+
+        <FieldContainer>
+          <Typography variant="body2" color="text.secondary">
+            Zoom Level
+          </Typography>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="zoom-select-label">Select Zoom Level</InputLabel>
+            <Select
+              labelId="zoom-select-label"
+              value={zoomLevel}
+              onChange={handleZoomChange}
+              label="Select Zoom Level">
+              {zoomOptions.map(option => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mt: 1,
+            }}>
+            <Typography variant="caption" color="text.secondary">
+              Current: {Math.round(zoomLevel * 100)}%
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleResetZoom}
+              color="secondary">
+              Reset to 100%
+            </Button>
+          </Box>
+        </FieldContainer>
       </SettingsPanel>
 
       <SettingsPanel elevation={1}>
@@ -96,6 +188,9 @@ export const SettingsSection = memo(() => {
             {availableThemes.find(t => t.value === currentTheme)?.label ||
               currentTheme}
           </strong>
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Zoom Level: <strong>{Math.round(zoomLevel * 100)}%</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
           A modern code editor with {availableThemes.length} unique themes to

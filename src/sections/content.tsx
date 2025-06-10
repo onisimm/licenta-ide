@@ -10,6 +10,7 @@ const ContentContainer = styled(Box)(({ theme }) => ({
   gridArea: 'main',
   backgroundColor: theme.palette.background.default,
   overflow: 'hidden',
+  minWidth: '260px',
   display: 'flex',
   flexDirection: 'column',
 }));
