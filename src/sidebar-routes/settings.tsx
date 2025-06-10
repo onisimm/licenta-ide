@@ -64,9 +64,6 @@ export const SettingsSection = memo(() => {
     // Apply zoom using Electron's API if available
     if (window.electron?.setZoomLevel) {
       window.electron.setZoomLevel(zoom);
-    } else {
-      // Fallback for web or if Electron API is not available
-      document.body.style.zoom = zoom.toString();
     }
   }, []);
 
@@ -77,8 +74,6 @@ export const SettingsSection = memo(() => {
 
     if (window.electron?.setZoomLevel) {
       window.electron.setZoomLevel(defaultZoom);
-    } else {
-      document.body.style.zoom = defaultZoom.toString();
     }
   }, []);
 
@@ -86,8 +81,6 @@ export const SettingsSection = memo(() => {
   useEffect(() => {
     if (window.electron?.setZoomLevel) {
       window.electron.setZoomLevel(zoomLevel);
-    } else {
-      document.body.style.zoom = zoomLevel.toString();
     }
   }, []);
 

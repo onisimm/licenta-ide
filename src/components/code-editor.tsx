@@ -93,6 +93,7 @@ const LoadingText = styled(Typography)(({ theme }) => ({
 
 export const CodeEditor: React.FC<CodeEditorProps> = memo(
   ({ value, language, fileName, onChange, readOnly = false }) => {
+    // TODO: fix variables tooltips being underneath other components
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const monacoInstanceRef = useRef<Monaco | null>(null);
     const [hasError, setHasError] = useState(false);
