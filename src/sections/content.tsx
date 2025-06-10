@@ -13,21 +13,19 @@ const ContentContainer = styled(Box)(({ theme }) => ({
   flexDirection: 'column',
 }));
 
-const EditorContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  flex: 1,
-  overflow: 'hidden',
-}));
-
-const DefaultSection = styled(Box)(({ theme }) => ({
-  width: '100%',
-  height: '100%',
+const DefaultOverlay = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: theme.palette.background.default,
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   flexDirection: 'column',
   gap: theme.spacing(2),
+  zIndex: 1,
 }));
 
 const DefaultSectionButton = styled('button')(({ theme }) => ({
@@ -47,14 +45,19 @@ const DefaultSectionButton = styled('button')(({ theme }) => ({
   },
 }));
 
-const LoadingContainer = styled(Box)(({ theme }) => ({
-  width: '100%',
-  height: '100%',
+const LoadingOverlay = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: theme.palette.background.default,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   flexDirection: 'column',
   gap: theme.spacing(2),
+  zIndex: 2,
 }));
 
 const LoadingText = styled(Typography)(({ theme }) => ({
@@ -68,36 +71,10 @@ const NoFileSelectedText = styled(Typography)(({ theme }) => ({
   textAlign: 'center',
 }));
 
-// Overlay for loading state when tabs are present
-const LoadingOverlay = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexDirection: 'column',
-  gap: theme.spacing(2),
-  zIndex: 1000,
-}));
-
-// Default overlay when no file is selected but tabs are present
-const DefaultOverlay = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: theme.palette.background.default,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexDirection: 'column',
-  gap: theme.spacing(2),
-  zIndex: 999,
+const EditorContainer = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  flex: 1,
+  overflow: 'hidden',
 }));
 
 const ContentSection = memo(() => {
@@ -116,6 +93,12 @@ const ContentSection = memo(() => {
     openFiles.length > 0 && activeFileIndex >= 0
       ? openFiles[activeFileIndex]
       : null;
+
+  // Use active file for Monaco editor, fallback to selectedFile for compatibility
+  const currentFile = activeFile || selectedFile;
+
+  // Files should always be editable unless there's a specific reason not to
+  const shouldBeReadOnly = false;
 
   // Handle open file/folder using the centralized hook
   const handleOpenFolder = useCallback(async () => {
@@ -138,76 +121,51 @@ const ContentSection = memo(() => {
     };
   }, [closeFolder]);
 
-  // If we have tabs, always show the editor with tab bar
-  if (openFiles.length > 0) {
-    return (
-      <ContentContainer>
-        <EditorContainer>
-          {/* Tab bar - always visible when there are open files */}
-          <TabBar />
-
-          {/* Monaco Editor - always mounted for best performance */}
-          <Box sx={{ flex: 1, position: 'relative' }}>
-            <ErrorBoundary>
-              <CodeEditor
-                value={activeFile?.content || ''}
-                language={activeFile?.language || 'plaintext'}
-                fileName={activeFile?.name || 'untitled'}
-                readOnly={!activeFile}
-              />
-            </ErrorBoundary>
-
-            {/* Loading overlay when file is being loaded */}
-            {isLoadingFile && (
-              <LoadingOverlay>
-                <CircularProgress size={32} />
-                <LoadingText>Loading file...</LoadingText>
-              </LoadingOverlay>
-            )}
-
-            {/* Default overlay when no active file but tabs exist */}
-            {!activeFile && !isLoadingFile && (
-              <DefaultOverlay>
-                <NoFileSelectedText>
-                  Select a tab to view the file content
-                </NoFileSelectedText>
-              </DefaultOverlay>
-            )}
-          </Box>
-        </EditorContainer>
-      </ContentContainer>
-    );
-  }
-
-  // Show loading state when file is being loaded (and no tabs)
-  if (isLoadingFile) {
-    return (
-      <ContentContainer>
-        <LoadingContainer>
-          <CircularProgress size={32} />
-          <LoadingText>Loading file...</LoadingText>
-        </LoadingContainer>
-      </ContentContainer>
-    );
-  }
-
-  // Show default state when no folder or no file selected (and no tabs)
+  // Always render Monaco Editor, but show overlays when needed
   return (
     <ContentContainer>
-      <DefaultSection>
-        {!hasFolder ? (
-          <>
-            <NoFileSelectedText>No file or directory opened</NoFileSelectedText>
-            <DefaultSectionButton onClick={handleOpenFolder}>
-              Open File or Directory
-            </DefaultSectionButton>
-          </>
-        ) : (
-          <NoFileSelectedText>
-            Select a file from the explorer to start editing
-          </NoFileSelectedText>
+      {/* Show TabBar when files are open */}
+      {openFiles.length > 0 && <TabBar />}
+
+      <EditorContainer>
+        {/* Monaco Editor - Always mounted for best performance */}
+        <ErrorBoundary>
+          <CodeEditor
+            value={currentFile?.content || ''}
+            language={currentFile?.language || 'plaintext'}
+            fileName={currentFile?.name || 'untitled'}
+            readOnly={shouldBeReadOnly}
+          />
+        </ErrorBoundary>
+
+        {/* Loading overlay */}
+        {isLoadingFile && (
+          <LoadingOverlay>
+            <CircularProgress size={32} />
+            <LoadingText>Loading file...</LoadingText>
+          </LoadingOverlay>
         )}
-      </DefaultSection>
+
+        {/* Default state overlay - show when no file is selected and not loading */}
+        {!currentFile && !isLoadingFile && (
+          <DefaultOverlay>
+            {!hasFolder ? (
+              <>
+                <NoFileSelectedText>
+                  No file or directory opened
+                </NoFileSelectedText>
+                <DefaultSectionButton onClick={handleOpenFolder}>
+                  Open File or Directory
+                </DefaultSectionButton>
+              </>
+            ) : (
+              <NoFileSelectedText>
+                Select a file from the explorer to start editing
+              </NoFileSelectedText>
+            )}
+          </DefaultOverlay>
+        )}
+      </EditorContainer>
     </ContentContainer>
   );
 });

@@ -66,11 +66,24 @@ The IDE now supports a tabbed interface similar to VS Code, allowing multiple fi
 2. **Close Tabs**: Click X button on individual tabs
 3. **Close All**: Use folder close operation to close all tabs
 
+### Keyboard Shortcuts
+
+1. **Ctrl+S (Cmd+S)**: Save the currently active file
+2. **Ctrl+W (Cmd+W)**: Close the currently active tab
+3. **Ctrl+Shift+W (Cmd+Shift+W)**: Close entire folder (closes all tabs)
+
+### Menu Operations
+
+1. **File → Save**: Saves the currently active file
+2. **File → Close File**: Closes the currently active tab
+3. **File → Close Folder**: Closes all tabs and folder
+
 ### Unsaved Changes
 
 1. **Visual Indicator**: Orange dot appears on tabs with unsaved changes
 2. **Save Confirmation**: Prompted when trying to close unsaved files
 3. **Auto-tracking**: Changes tracked automatically as you type
+4. **Editor Indicator**: "Unsaved changes" indicator in top-right of editor
 
 ## Technical Implementation
 

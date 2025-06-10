@@ -30,6 +30,26 @@ const EditorContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
+  position: 'relative',
+}));
+
+const SaveIndicator = styled(Box, {
+  shouldForwardProp: prop => prop !== 'hasUnsavedChanges',
+})<{ hasUnsavedChanges: boolean }>(({ theme, hasUnsavedChanges }) => ({
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  display: hasUnsavedChanges ? 'flex' : 'none',
+  alignItems: 'center',
+  gap: theme.spacing(0.5),
+  backgroundColor: theme.palette.warning.main,
+  color: theme.palette.warning.contrastText,
+  padding: theme.spacing(0.25, 0.75),
+  borderRadius: theme.spacing(0.5),
+  fontSize: '11px',
+  fontWeight: 500,
+  zIndex: 1000,
+  boxShadow: theme.shadows[2],
 }));
 
 const EditorHeader = styled(Box)(({ theme }) => ({
@@ -77,12 +97,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     const [isSaving, setIsSaving] = useState(false);
 
     // Project operations hook - centralized file/folder operations
-    const { saveFile, closeFile, closeFolder, selectedFile } =
-      useProjectOperations();
+    const {
+      saveFile,
+      closeFile,
+      closeFolder,
+      selectedFile,
+      activeFile,
+      hasOpenFiles,
+    } = useProjectOperations();
     const dispatch = useAppDispatch();
 
     // Track if this is an empty/placeholder state
-    const isEmpty = !selectedFile || !value;
+    const isEmpty = !activeFile && !selectedFile;
+
+    // Get the current file to work with (prefer activeFile from tabs)
+    const currentFile = activeFile || selectedFile;
 
     // Editor content getter function
     const getEditorContent = useCallback(() => {
@@ -125,7 +154,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       (value: string | undefined) => {
         try {
           // Update the active file content in tabs
-          if (value !== undefined && selectedFile && !isEmpty) {
+          if (value !== undefined && currentFile && !isEmpty) {
             dispatch(updateActiveFileContent(value));
           }
 
@@ -138,20 +167,63 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           setErrorMessage(`Change error: ${error}`);
         }
       },
-      [selectedFile, dispatch, onChange, isEmpty],
+      [currentFile, dispatch, onChange, isEmpty],
     );
 
-    // Menu event listeners
+    // Menu event listeners and keyboard shortcuts
     useEffect(() => {
       const unsubscribeSave = window.electron.onMenuSaveFile?.(handleSaveFile);
       const unsubscribeClose =
         window.electron.onMenuCloseFile?.(handleCloseFile);
 
+      // Global keyboard event listener as fallback for Monaco shortcuts
+      const handleKeyDown = (event: KeyboardEvent) => {
+        // Only handle when Monaco editor is focused or when no other input is focused
+        const activeElement = document.activeElement;
+        const isMonacoFocused =
+          activeElement?.classList.contains('monaco-editor') ||
+          activeElement?.closest('.monaco-editor') ||
+          (activeElement?.tagName === 'TEXTAREA' &&
+            activeElement.className.includes('monaco'));
+
+        if (
+          !isMonacoFocused &&
+          activeElement?.tagName !== 'INPUT' &&
+          activeElement?.tagName !== 'TEXTAREA'
+        ) {
+          return; // Let other components handle their shortcuts
+        }
+
+        const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+        if (isCtrlOrCmd && event.key === 's') {
+          event.preventDefault();
+          event.stopPropagation();
+          handleSaveFile();
+          return;
+        }
+
+        if (isCtrlOrCmd && event.key === 'w') {
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.shiftKey) {
+            handleCloseFolder();
+          } else {
+            handleCloseFile();
+          }
+          return;
+        }
+      };
+
+      // Add global keyboard listener
+      document.addEventListener('keydown', handleKeyDown, true); // Use capture phase
+
       return () => {
         unsubscribeSave?.();
         unsubscribeClose?.();
+        document.removeEventListener('keydown', handleKeyDown, true);
       };
-    }, [handleSaveFile, handleCloseFile]);
+    }, [handleSaveFile, handleCloseFile, handleCloseFolder]);
 
     // Handle scrolling to line when Monaco is ready - ULTRA FAST
     const handleScrollToLine = useCallback((lineNumber: number) => {
@@ -396,41 +468,65 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
 
         // Add keyboard shortcuts with error handling
         try {
-          editor.addCommand(
+          // Create stable command handlers by capturing current handler references
+          const saveCommand = () => {
+            try {
+              console.log('Monaco save command triggered');
+              handleSaveFile();
+            } catch (error) {
+              console.error('Error in Monaco save command:', error);
+              logError('Monaco Save Command', error);
+            }
+          };
+
+          const closeCommand = () => {
+            try {
+              console.log('Monaco close command triggered');
+              handleCloseFile();
+            } catch (error) {
+              console.error('Error in Monaco close command:', error);
+              logError('Monaco Close Command', error);
+            }
+          };
+
+          const closeFolderCommand = () => {
+            try {
+              console.log('Monaco close folder command triggered');
+              handleCloseFolder();
+            } catch (error) {
+              console.error('Error in Monaco close folder command:', error);
+              logError('Monaco Close Folder Command', error);
+            }
+          };
+
+          // Register Monaco commands with proper context
+          const saveCommandId = editor.addCommand(
             monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
-            () => {
-              try {
-                handleSaveFile();
-              } catch (error) {
-                logError('Monaco Save Command', error);
-              }
-            },
+            saveCommand,
+            '',
           );
 
-          editor.addCommand(
+          const closeCommandId = editor.addCommand(
             monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW,
-            () => {
-              try {
-                handleCloseFile();
-              } catch (error) {
-                logError('Monaco Close Command', error);
-              }
-            },
+            closeCommand,
+            '',
           );
 
-          editor.addCommand(
+          const closeFolderCommandId = editor.addCommand(
             monacoInstance.KeyMod.CtrlCmd |
               monacoInstance.KeyMod.Shift |
               monacoInstance.KeyCode.KeyW,
-            () => {
-              try {
-                handleCloseFolder();
-              } catch (error) {
-                logError('Monaco Close Folder Command', error);
-              }
-            },
+            closeFolderCommand,
+            '',
           );
+
+          console.log('Monaco commands registered:', {
+            saveCommandId,
+            closeCommandId,
+            closeFolderCommandId,
+          });
         } catch (error) {
+          console.error('Failed to register Monaco commands:', error);
           logError('Monaco Command Registration', error);
         }
 
@@ -485,8 +581,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     // Get normalized language for Monaco
     const monacoLanguage = getMonacoLanguage(language);
 
+    // Check if current file has unsaved changes
+    const hasUnsavedChanges = activeFile?.hasUnsavedChanges || false;
+
     return (
       <EditorContainer>
+        {/* Save indicator for unsaved changes */}
+        <SaveIndicator hasUnsavedChanges={hasUnsavedChanges && !isSaving}>
+          {isSaving ? 'Saving...' : 'Unsaved changes'}
+        </SaveIndicator>
+
         <EditorWrapper>
           <Editor
             height="100%"
