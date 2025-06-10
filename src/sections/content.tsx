@@ -4,6 +4,7 @@ import { useAppSelector, useProjectOperations } from '../shared/hooks';
 import { CodeEditor } from '../components/code-editor';
 import { TabBar } from '../components/tab-bar';
 import { ErrorBoundary } from '../components/error-boundary';
+import { DefaultButton } from '../components/buttons';
 
 const ContentContainer = styled(Box)(({ theme }) => ({
   gridArea: 'main',
@@ -26,23 +27,6 @@ const DefaultOverlay = styled(Box)(({ theme }) => ({
   flexDirection: 'column',
   gap: theme.spacing(2),
   zIndex: 1,
-}));
-
-const DefaultSectionButton = styled('button')(({ theme }) => ({
-  outline: 'none',
-  backgroundColor: theme.palette.primary.light,
-  color: theme.palette.text.primary,
-  fontSize: '90%',
-  padding: theme.spacing(0.75, 1.5),
-  borderRadius: theme.shape.borderRadius,
-  border: `.3px solid ${theme.palette.primary.main}`,
-  cursor: 'pointer',
-  boxShadow: theme.shadows[1],
-
-  transition: 'background-color .2s',
-  '&:hover': {
-    backgroundColor: theme.palette.primary.main,
-  },
 }));
 
 const LoadingOverlay = styled(Box)(({ theme }) => ({
@@ -154,9 +138,9 @@ const ContentSection = memo(() => {
                 <NoFileSelectedText>
                   No file or directory opened
                 </NoFileSelectedText>
-                <DefaultSectionButton onClick={handleOpenFolder}>
+                <DefaultButton onClick={handleOpenFolder}>
                   Open File or Directory
-                </DefaultSectionButton>
+                </DefaultButton>
               </>
             ) : (
               <NoFileSelectedText>

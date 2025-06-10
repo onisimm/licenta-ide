@@ -5,6 +5,7 @@ import {
   CircularProgress,
   Typography,
   alpha,
+  useTheme,
 } from '@mui/material';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -13,6 +14,7 @@ import { useProjectOperations, useAppDispatch } from '../shared/hooks';
 import { updateActiveFileContent } from '../shared/rdx-slice';
 import loader from '@monaco-editor/loader';
 import { getMonacoLanguage } from '../constants/languages';
+import { useThemeToggle } from '../theme/themeProvider';
 
 loader.config({ monaco });
 
@@ -92,9 +94,12 @@ const LoadingText = styled(Typography)(({ theme }) => ({
 export const CodeEditor: React.FC<CodeEditorProps> = memo(
   ({ value, language, fileName, onChange, readOnly = false }) => {
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const monacoInstanceRef = useRef<Monaco | null>(null);
     const [hasError, setHasError] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
+    const theme = useTheme();
+    const { isDarkMode } = useThemeToggle();
 
     // Project operations hook - centralized file/folder operations
     const {
@@ -331,6 +336,56 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       };
     }, []);
 
+    // Update theme when isDarkMode changes
+    useEffect(() => {
+      if (editorRef.current && monacoInstanceRef.current) {
+        try {
+          // Redefine themes with current theme colors
+          monacoInstanceRef.current.editor.defineTheme('vs-dark-custom', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [],
+            colors: {
+              'editor.background': theme.palette.editor.background,
+              'editor.foreground': theme.palette.editor.foreground,
+              'editor.lineHighlightBackground':
+                theme.palette.editor.lineHighlight,
+              'editor.selectionBackground': theme.palette.editor.selection,
+              'editor.inactiveSelectionBackground':
+                theme.palette.editor.inactiveSelection,
+              'editorCursor.foreground': theme.palette.editor.cursor,
+              'editorWhitespace.foreground': theme.palette.editor.whitespace,
+            },
+          });
+
+          monacoInstanceRef.current.editor.defineTheme('vs-light-custom', {
+            base: 'vs',
+            inherit: true,
+            rules: [],
+            colors: {
+              'editor.background': theme.palette.editor.background,
+              'editor.foreground': theme.palette.editor.foreground,
+              'editor.lineHighlightBackground':
+                theme.palette.editor.lineHighlight,
+              'editor.selectionBackground': theme.palette.editor.selection,
+              'editor.inactiveSelectionBackground':
+                theme.palette.editor.inactiveSelection,
+              'editorCursor.foreground': theme.palette.editor.cursor,
+              'editorWhitespace.foreground': theme.palette.editor.whitespace,
+            },
+          });
+
+          // Set the appropriate theme
+          monacoInstanceRef.current.editor.setTheme(
+            isDarkMode ? 'vs-dark-custom' : 'vs-light-custom',
+          );
+        } catch (error) {
+          console.error('Error setting Monaco theme:', error);
+          logError('Monaco Theme Switch', error);
+        }
+      }
+    }, [isDarkMode, theme.palette.editor]);
+
     const handleEditorDidMount = (
       editor: monaco.editor.IStandaloneCodeEditor,
       monacoInstance: Monaco,
@@ -338,6 +393,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       try {
         console.log('Monaco Editor mounting...');
         editorRef.current = editor;
+        monacoInstanceRef.current = monacoInstance;
 
         // Add editor-specific error handling
         editor.onDidChangeModelContent(e => {
@@ -360,23 +416,45 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           }
         });
 
-        // Configure Monaco for VS Code-like behavior
+        // Configure Monaco themes for both light and dark (initial setup)
         monacoInstance.editor.defineTheme('vs-dark-custom', {
           base: 'vs-dark',
           inherit: true,
           rules: [],
           colors: {
-            'editor.background': '#0d1117',
-            'editor.foreground': '#fafafa',
-            'editor.lineHighlightBackground': '#1c2333',
-            'editor.selectionBackground': '#264f78',
-            'editor.inactiveSelectionBackground': '#3a3d41',
-            'editorCursor.foreground': '#fafafa',
-            'editorWhitespace.foreground': '#3c4043',
+            'editor.background': theme.palette.editor.background,
+            'editor.foreground': theme.palette.editor.foreground,
+            'editor.lineHighlightBackground':
+              theme.palette.editor.lineHighlight,
+            'editor.selectionBackground': theme.palette.editor.selection,
+            'editor.inactiveSelectionBackground':
+              theme.palette.editor.inactiveSelection,
+            'editorCursor.foreground': theme.palette.editor.cursor,
+            'editorWhitespace.foreground': theme.palette.editor.whitespace,
           },
         });
 
-        monacoInstance.editor.setTheme('vs-dark-custom');
+        monacoInstance.editor.defineTheme('vs-light-custom', {
+          base: 'vs',
+          inherit: true,
+          rules: [],
+          colors: {
+            'editor.background': theme.palette.editor.background,
+            'editor.foreground': theme.palette.editor.foreground,
+            'editor.lineHighlightBackground':
+              theme.palette.editor.lineHighlight,
+            'editor.selectionBackground': theme.palette.editor.selection,
+            'editor.inactiveSelectionBackground':
+              theme.palette.editor.inactiveSelection,
+            'editorCursor.foreground': theme.palette.editor.cursor,
+            'editorWhitespace.foreground': theme.palette.editor.whitespace,
+          },
+        });
+
+        // Set the appropriate theme based on current mode
+        monacoInstance.editor.setTheme(
+          isDarkMode ? 'vs-dark-custom' : 'vs-light-custom',
+        );
 
         // Configure TypeScript compiler options for better JSX/TSX support
         if (language === 'typescript' || language === 'tsx') {

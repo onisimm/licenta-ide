@@ -13,6 +13,7 @@ import {
   initializeGitIgnore,
   getGitIgnoreChecker,
 } from '../shared/gitignore-utils';
+import { DefaultButton } from '../components/buttons';
 
 const ExplorerContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -134,24 +135,10 @@ const EmptyState = styled(Box)(({ theme }) => ({
   textAlign: 'center',
   color: theme.palette.text.secondary,
   fontSize: '13px',
-}));
-
-const CenterButton = styled('button')(({ theme }) => ({
-  outline: 'none',
-  backgroundColor: theme.palette.primary.light,
-  color: theme.palette.text.primary,
-  fontSize: '13px',
-  padding: theme.spacing(1, 2),
-  borderRadius: theme.shape.borderRadius,
-  border: `.3px solid ${theme.palette.primary.main}`,
-  cursor: 'pointer',
-  boxShadow: theme.shadows[1],
-  marginTop: theme.spacing(1),
-
-  transition: 'background-color .2s',
-  '&:hover': {
-    backgroundColor: theme.palette.primary.main,
-  },
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: theme.spacing(1),
 }));
 
 // Action button icons (simple SVG icons for now)
@@ -357,7 +344,7 @@ export const ExplorerSection = memo(() => {
         <EmptyState>
           No folder selected.
           <br />
-          <CenterButton onClick={openFolder}>Open Folder</CenterButton>
+          <DefaultButton onClick={openFolder}>Open Folder</DefaultButton>
         </EmptyState>
       )}
     </ExplorerContainer>

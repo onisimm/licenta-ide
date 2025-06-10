@@ -92,23 +92,25 @@ const FileItemContainer = styled(Box)<{ isHovered?: boolean }>(
 );
 
 // Add expand icon (matches file tree design)
-const ExpandIcon = styled(Box)<{ isExpanded: boolean }>(({ isExpanded }) => ({
-  width: 16,
-  height: 16,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: 4,
-  cursor: 'pointer',
-  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-  transition: 'transform 0.15s ease-in-out',
+const ExpandIcon = styled(Box)<{ isExpanded?: boolean }>(
+  ({ theme, isExpanded }) => ({
+    width: 12,
+    height: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+    cursor: 'pointer',
+    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+    transition: 'transform 0.15s ease-in-out',
 
-  '&::before': {
-    content: '"▶"',
-    fontSize: '10px',
-    color: '#8e8e8e',
-  },
-}));
+    '&::before': {
+      content: '"▶"',
+      fontSize: '10px',
+      color: theme.palette.text.secondary,
+    },
+  }),
+);
 
 // Line item container (indented like file tree children)
 const LineItemContainer = styled(Box)<{ isHovered?: boolean }>(
@@ -174,11 +176,8 @@ const LineContent = styled(Typography)(({ theme }) => ({
 const MatchCount = styled(Typography)(({ theme }) => ({
   fontSize: '11px',
   color: theme.palette.text.secondary,
-  backgroundColor: alpha(theme.palette.text.secondary, 0.1),
-  padding: theme.spacing(0.25, 0.5),
-  borderRadius: 3,
-  marginLeft: theme.spacing(1),
-  flexShrink: 0,
+  marginLeft: theme.spacing(0.5),
+  fontWeight: 400,
 }));
 
 const NoFolderMessage = styled(Box)(({ theme }) => ({
@@ -197,6 +196,53 @@ const LoadingContainer = styled(Box)(({ theme }) => ({
   justifyContent: 'center',
   gap: theme.spacing(1),
   padding: theme.spacing(2),
+}));
+
+const NoResultsText = styled(Typography)(({ theme }) => ({
+  padding: theme.spacing(2),
+  textAlign: 'center',
+  color: theme.palette.text.secondary,
+  fontSize: '14px',
+  fontStyle: 'italic',
+}));
+
+const FileResultItem = styled(Box, {
+  shouldForwardProp: prop => prop !== 'isHovered',
+})<{ isHovered: boolean }>(({ theme, isHovered }) => ({
+  padding: theme.spacing(0.5, 1),
+  cursor: 'pointer',
+  borderRadius: theme.spacing(0.5),
+  backgroundColor: isHovered ? theme.palette.action.hover : 'transparent',
+  '&:active': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  transition: 'background-color 0.15s ease',
+}));
+
+const LineResultItem = styled(Box, {
+  shouldForwardProp: prop => prop !== 'isHovered',
+})<{ isHovered: boolean }>(({ theme, isHovered }) => ({
+  padding: theme.spacing(0.25, 1, 0.25, 2),
+  cursor: 'pointer',
+  fontSize: '12px',
+  backgroundColor: isHovered ? theme.palette.action.hover : 'transparent',
+  '&:active': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  transition: 'background-color 0.15s ease',
+}));
+
+const HighlightedText = styled('span')(({ theme }) => ({
+  color: theme.palette.primary.main,
+  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  borderRadius: theme.spacing(0.25),
+  padding: '1px 2px',
+  fontWeight: 500,
+}));
+
+const PreviewText = styled('span')(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  fontSize: '12px',
 }));
 
 export const SearchSection: React.FC = () => {

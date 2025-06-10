@@ -7,8 +7,13 @@ import {
   Button,
   Paper,
   Divider,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { useAppTitle } from '../shared/hooks';
+import { useThemeToggle } from '../theme/themeProvider';
 
 const SettingsContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -46,6 +51,7 @@ const ButtonContainer = styled(Box)(({ theme }) => ({
 
 export const SettingsSection = memo(() => {
   const { title, updateTitle } = useAppTitle();
+  const { toggleTheme, isDarkMode } = useThemeToggle();
   const [tempTitle, setTempTitle] = useState(title);
 
   const handleTitleChange = useCallback(
@@ -53,6 +59,19 @@ export const SettingsSection = memo(() => {
       setTempTitle(event.target.value);
     },
     [],
+  );
+
+  const handleThemeChange = useCallback(
+    (event: any) => {
+      const selectedTheme = event.target.value;
+      const shouldBeDark = selectedTheme === 'dark';
+
+      // Only toggle if the selection is different from current state
+      if (shouldBeDark !== isDarkMode) {
+        toggleTheme();
+      }
+    },
+    [isDarkMode, toggleTheme],
   );
 
   const handleSave = useCallback(() => {
@@ -76,6 +95,29 @@ export const SettingsSection = memo(() => {
       <Typography variant="h6" sx={{ mb: 1 }}>
         Settings
       </Typography>
+
+      <SettingsPanel elevation={1}>
+        <SectionTitle>Appearance</SectionTitle>
+        <FieldContainer>
+          <Typography variant="body2" color="text.secondary">
+            Theme
+          </Typography>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="theme-select-label">Select Theme</InputLabel>
+            <Select
+              labelId="theme-select-label"
+              value={isDarkMode ? 'dark' : 'light'}
+              onChange={handleThemeChange}
+              label="Select Theme">
+              <MenuItem value="light">Light</MenuItem>
+              <MenuItem value="dark">Dark</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" color="text.secondary">
+            Choose between light and dark appearance
+          </Typography>
+        </FieldContainer>
+      </SettingsPanel>
 
       <SettingsPanel elevation={1}>
         <SectionTitle>Application</SectionTitle>
@@ -124,8 +166,11 @@ export const SettingsSection = memo(() => {
           Current Title: <strong>{title}</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          This editor allows you to customize the application title and other
-          settings.
+          Current Theme: <strong>{isDarkMode ? 'Dark' : 'Light'}</strong>
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          This editor allows you to customize the application appearance and
+          other settings.
         </Typography>
       </SettingsPanel>
     </SettingsContainer>

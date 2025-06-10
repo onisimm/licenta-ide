@@ -1,21 +1,38 @@
 import React, { SVGProps } from 'react';
 import { getFileExtension, hasFileIcon } from '../constants/languages';
 import { IconProps } from '../types/icon';
+import { useTheme } from '@mui/material';
 
 const iconSize = 16;
 
 // Folder icons
-export const FolderIcon = ({ color = '#4169E1' }: { color?: string }) => (
-  <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill={color}>
-    <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z" />
-  </svg>
-);
+export const FolderIcon = ({ color }: { color?: string }) => {
+  const theme = useTheme();
+  const folderColor = color || theme.palette.fileTypes.folder;
 
-export const FolderOpenIcon = ({ color = '#4169E1' }: { color?: string }) => (
-  <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill={color}>
-    <path d="M19 20H4a2 2 0 0 1-2-2V6c0-1.11.89-2 2-2h6l2 2h7a2 2 0 0 1 2 2H4v10l1.14-4h17.07l-1.21 4.86z" />
-  </svg>
-);
+  return (
+    <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"
+        fill={folderColor}
+      />
+    </svg>
+  );
+};
+
+export const FolderOpenIcon = ({ color }: { color?: string }) => {
+  const theme = useTheme();
+  const folderColor = color || theme.palette.fileTypes.folderOpen;
+
+  return (
+    <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM4 6h5.17l2 2H20v10H4V6z"
+        fill={folderColor}
+      />
+    </svg>
+  );
+};
 
 // File icons by extension
 export function TypeScriptIcon(props: SVGProps<SVGSVGElement>) {
@@ -592,6 +609,8 @@ export const getFileIcon = (
   isDirectory: boolean,
   isOpen = false,
 ) => {
+  const theme = useTheme();
+
   if (isDirectory) {
     return isOpen ? <FolderOpenIcon /> : <FolderIcon />;
   }

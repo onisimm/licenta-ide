@@ -34,22 +34,41 @@ const TreeContainer = styled(Box)(({ theme }) => ({
   userSelect: 'none',
 }));
 
-const FileItemContainer = styled(Box)<{ level: number; isHovered?: boolean }>(
-  ({ theme, level, isHovered }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    paddingLeft: theme.spacing(level * 1.5),
-    paddingRight: theme.spacing(0.5),
-    paddingTop: theme.spacing(0.25),
-    paddingBottom: theme.spacing(0.25),
-    cursor: 'pointer',
-    backgroundColor: isHovered ? theme.palette.action.hover : 'transparent',
+const TreeItem = styled(Box, {
+  shouldForwardProp: prop => prop !== 'level' && prop !== 'isHovered',
+})<{ level: number; isHovered: boolean }>(({ theme, level, isHovered }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  paddingLeft: theme.spacing(level + 1),
+  paddingRight: theme.spacing(1),
+  paddingTop: theme.spacing(0.25),
+  paddingBottom: theme.spacing(0.25),
+  cursor: 'pointer',
+  fontSize: '13px',
+  color: theme.palette.text.primary,
+  userSelect: 'none',
+  minHeight: 22,
+  position: 'relative',
 
-    '&:hover': {
-      backgroundColor: theme.palette.action.hover,
-    },
-  }),
-);
+  '&:hover': {
+    backgroundColor: isHovered ? theme.palette.action.hover : 'transparent',
+  },
+  '&:active': {
+    backgroundColor: theme.palette.action.hover,
+  },
+
+  // Custom hover effect for better UX
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    pointerEvents: 'none',
+  },
+}));
 
 const ExpandIcon = styled(Box)<{
   isExpanded: boolean;
@@ -75,36 +94,48 @@ const ExpandIcon = styled(Box)<{
   },
 }));
 
-const FileIcon = styled(Box)<{ isGitIgnored?: boolean }>(
-  ({ theme, isGitIgnored }) => ({
-    width: 16,
-    height: 16,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing(0.75),
-    flexShrink: 0,
-    opacity: isGitIgnored ? 0.5 : 1,
-    filter: isGitIgnored ? 'grayscale(50%)' : 'none',
-  }),
-);
+const FileIcon = styled(Box, {
+  shouldForwardProp: prop => prop !== 'isGitIgnored',
+})<{ isGitIgnored: boolean }>(({ theme, isGitIgnored }) => ({
+  width: 16,
+  height: 16,
+  marginRight: theme.spacing(0.5),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  color: isGitIgnored
+    ? theme.palette.fileTree.gitIgnored
+    : theme.palette.fileTree.fileIcon,
+}));
 
-const FileName = styled(Typography)<{ isGitIgnored?: boolean }>(
-  ({ theme, isGitIgnored }) => ({
+const FileName = styled('span', {
+  shouldForwardProp: prop => prop !== 'isDirectory',
+})<{ isDirectory: boolean; isGitIgnored: boolean }>(
+  ({ theme, isDirectory, isGitIgnored }) => ({
     fontSize: '13px',
-    fontWeight: 400,
+    lineHeight: 1.4,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     flex: 1,
-    color: 'inherit',
-    opacity: isGitIgnored ? 0.4 : 1,
+    fontWeight: isDirectory ? 500 : 400,
+    color: isGitIgnored
+      ? theme.palette.fileTree.gitIgnored
+      : theme.palette.fileTree.fileIcon,
   }),
 );
 
 const LoadingSpinner = styled(CircularProgress)(({ theme }) => ({
   marginLeft: theme.spacing(0.5),
   color: theme.palette.text.secondary,
+}));
+
+const EmptyState = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  textAlign: 'center',
+  color: theme.palette.text.secondary,
+  fontSize: '14px',
 }));
 
 const FileItem: React.FC<FileItemProps> = ({
@@ -168,7 +199,7 @@ const FileItem: React.FC<FileItemProps> = ({
 
   return (
     <>
-      <FileItemContainer
+      <TreeItem
         level={level}
         isHovered={isHovered}
         onClick={handleClick}
@@ -193,10 +224,14 @@ const FileItem: React.FC<FileItemProps> = ({
           title={item.isGitIgnored ? 'This file is ignored by git' : ''}
           placement="top"
           disableHoverListener={!item.isGitIgnored}>
-          <FileName isGitIgnored={item.isGitIgnored}>{item.name}</FileName>
+          <FileName
+            isDirectory={item.isDirectory}
+            isGitIgnored={item.isGitIgnored}>
+            {item.name}
+          </FileName>
         </Tooltip>
         {item.isLoading && <LoadingSpinner size={12} thickness={4} />}
-      </FileItemContainer>
+      </TreeItem>
 
       {item.isDirectory && isExpanded && hasChildren && (
         <FileTree
@@ -325,7 +360,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   );
 
   if (!treeItems || treeItems.length === 0) {
-    return null;
+    return <EmptyState>No files found in the selected directory.</EmptyState>;
   }
 
   return (

@@ -1,7 +1,11 @@
 import { IconProps } from '../types/icon';
 import { StyledSVG } from './styled-svg';
 
-export function ProfileIcon({ size = 26, color, ...props }: IconProps) {
+export function ProfileIcon({
+  size = 26,
+  color = '#fafafa',
+  ...props
+}: IconProps) {
   return (
     <StyledSVG
       xmlns="http://www.w3.org/2000/svg"

@@ -1,5 +1,12 @@
 import React, { memo, useCallback } from 'react';
-import { Box, styled, IconButton, Typography, Tooltip } from '@mui/material';
+import {
+  Box,
+  styled,
+  IconButton,
+  Typography,
+  Tooltip,
+  useTheme,
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAppSelector, useAppDispatch } from '../shared/hooks';
 import { switchToTab, closeTab } from '../shared/rdx-slice';
@@ -8,69 +15,48 @@ import { getFileIcon } from '../icons/file-types';
 const TabBarContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
+  height: 35,
   backgroundColor: theme.palette.background.paper,
   borderBottom: `1px solid ${theme.palette.divider}`,
-  minHeight: 35,
+  overflow: 'hidden',
+}));
+
+const TabsScrollContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flex: 1,
   overflowX: 'auto',
-  overflowY: 'hidden',
-  // Custom scrollbar for tab bar
+  backgroundColor: theme.palette.background.default,
   '&::-webkit-scrollbar': {
-    height: 6,
-  },
-  '&::-webkit-scrollbar-track': {
-    backgroundColor: theme.palette.background.default,
+    height: 3,
+    backgroundColor: theme.palette.action.disabled,
   },
   '&::-webkit-scrollbar-thumb': {
-    backgroundColor: theme.palette.action.disabled,
-    borderRadius: 3,
-  },
-  '&::-webkit-scrollbar-thumb:hover': {
     backgroundColor: theme.palette.action.hover,
+    borderRadius: 2,
   },
 }));
 
 const Tab = styled(Box, {
-  shouldForwardProp: prop =>
-    prop !== 'isActive' && prop !== 'hasUnsavedChanges',
-})<{ isActive: boolean; hasUnsavedChanges: boolean }>(
-  ({ theme, isActive, hasUnsavedChanges }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-    padding: theme.spacing(0.5, 1),
-    minHeight: 35,
-    minWidth: 120,
-    maxWidth: 200,
-    cursor: 'pointer',
-    backgroundColor: isActive
-      ? theme.palette.background.default
-      : 'transparent',
-    borderRight: `1px solid ${theme.palette.divider}`,
-    borderTop: isActive
-      ? `2px solid ${theme.palette.primary.main}`
-      : '2px solid transparent',
-    transition: 'all 0.2s ease',
-    position: 'relative',
+  shouldForwardProp: prop => prop !== 'isActive',
+})<{ isActive: boolean }>(({ theme, isActive }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: theme.spacing(0.5, 1),
+  minWidth: 120,
+  maxWidth: 200,
+  height: '100%',
+  cursor: 'pointer',
+  borderRight: `1px solid ${theme.palette.divider}`,
+  backgroundColor: isActive
+    ? theme.palette.background.paper
+    : theme.palette.background.default,
+  position: 'relative',
+  transition: 'background-color 0.2s',
 
-    '&:hover': {
-      backgroundColor: theme.palette.action.hover,
-    },
-
-    // Unsaved changes indicator
-    ...(hasUnsavedChanges && {
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        top: 6,
-        right: 6,
-        width: 6,
-        height: 6,
-        borderRadius: '50%',
-        backgroundColor: theme.palette.warning.main,
-      },
-    }),
-  }),
-);
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
 
 const TabIcon = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -91,27 +77,26 @@ const TabTitle = styled(Typography)(({ theme }) => ({
   minWidth: 0,
 }));
 
+const UnsavedIndicator = styled(Box)(({ theme }) => ({
+  width: 6,
+  height: 6,
+  borderRadius: '50%',
+  backgroundColor: theme.palette.warning.main,
+  marginLeft: theme.spacing(0.5),
+  flexShrink: 0,
+}));
+
 const CloseButton = styled(IconButton)(({ theme }) => ({
   padding: 2,
-  width: 20,
-  height: 20,
-  borderRadius: 2,
-  flexShrink: 0,
-  opacity: 0.7,
-  transition: 'opacity 0.2s ease',
-
+  marginLeft: theme.spacing(0.5),
   '&:hover': {
-    opacity: 1,
     backgroundColor: theme.palette.action.hover,
-  },
-
-  '& .MuiSvgIcon-root': {
-    fontSize: '14px',
   },
 }));
 
-export const TabBar: React.FC = memo(() => {
+export const TabBar = memo(() => {
   const dispatch = useAppDispatch();
+  const theme = useTheme();
   const { openFiles, activeFileIndex } = useAppSelector(state => ({
     openFiles: state.main.openFiles,
     activeFileIndex: state.main.activeFileIndex,
@@ -141,23 +126,32 @@ export const TabBar: React.FC = memo(() => {
 
   return (
     <TabBarContainer>
-      {openFiles.map((file, index) => (
-        <Tab
-          key={file.path}
-          isActive={index === activeFileIndex}
-          hasUnsavedChanges={file.hasUnsavedChanges || false}
-          onClick={() => handleTabClick(index)}>
-          <TabIcon>{getFileIcon(file.name, false, false)}</TabIcon>
+      <TabsScrollContainer>
+        {openFiles.map((file, index) => (
+          <Tab
+            key={file.path}
+            isActive={index === activeFileIndex}
+            onClick={() => handleTabClick(index)}>
+            <TabIcon>{getFileIcon(file.name, false, false)}</TabIcon>
 
-          <Tooltip title={file.path} placement="bottom">
-            <TabTitle>{file.name}</TabTitle>
-          </Tooltip>
+            <Tooltip title={file.path} placement="bottom">
+              <TabTitle>{file.name}</TabTitle>
+            </Tooltip>
 
-          <CloseButton onClick={e => handleCloseTab(e, index)} size="small">
-            <CloseIcon sx={{ color: '#fafafa' }} />
-          </CloseButton>
-        </Tab>
-      ))}
+            {/* Show unsaved indicator */}
+            {file.hasUnsavedChanges && <UnsavedIndicator />}
+
+            <CloseButton
+              size="small"
+              onClick={e => handleCloseTab(e, index)}
+              title="Close tab">
+              <CloseIcon
+                sx={{ color: theme.palette.text.primary, fontSize: 14 }}
+              />
+            </CloseButton>
+          </Tab>
+        ))}
+      </TabsScrollContainer>
     </TabBarContainer>
   );
 });

@@ -7,10 +7,10 @@ The IDE's search functionality provides powerful text search across all files in
 ## Architecture Overview
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│  SearchSection  │───▶│ useProjectOps    │───▶│   Electron IPC  │
+┌─────────────────┐    ┌──────────────────┐    ┌───────────────────┐
+│  SearchSection  │───▶│ useProjectOps    │───▶│   Electron IPC    │
 │   Component     │    │     Hook         │    │   (searchInFolder)│
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+└─────────────────┘    └──────────────────┘    └───────────────────┘
          │                                               │
          ▼                                               ▼
 ┌─────────────────┐                              ┌─────────────────┐

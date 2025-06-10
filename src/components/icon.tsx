@@ -48,7 +48,7 @@ export default function Icon({
     <Tooltip
       key={name}
       title={description}
-      placement="right"
+      placement="left"
       arrow
       enterDelay={0}
       leaveDelay={0}

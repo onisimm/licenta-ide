@@ -3,7 +3,7 @@ import { StyledSVG } from './styled-svg';
 
 export default function SettingsIcon({
   size = 25,
-  color,
+  color = '#fafafa',
   ...props
 }: IconProps) {
   return (
