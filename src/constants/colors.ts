@@ -317,7 +317,7 @@ export const oceanColors: ColorScheme = {
     whitespace: '#3c5f83',
   },
   fileTree: {
-    gitIgnored: '#6b8fa3',
+    gitIgnored: '#547283',
     fileIcon: '#b3d9e8',
     folderIcon: '#00acc1',
   },
@@ -566,7 +566,7 @@ export const purpleColors: ColorScheme = {
     whitespace: '#4d3850',
   },
   fileTree: {
-    gitIgnored: '#9c7ba0',
+    gitIgnored: '#755a78',
     fileIcon: '#e1bee7',
     folderIcon: '#ab47bc',
   },
@@ -649,7 +649,7 @@ export const midnightColors: ColorScheme = {
     whitespace: '#3a3a4d',
   },
   fileTree: {
-    gitIgnored: '#7986cb',
+    gitIgnored: '#3c4368',
     fileIcon: '#c5cae9',
     folderIcon: '#303f9f',
   },
@@ -732,7 +732,7 @@ export const roseColors: ColorScheme = {
     whitespace: '#5d3a4d',
   },
   fileTree: {
-    gitIgnored: '#c895b3',
+    gitIgnored: '#735366',
     fileIcon: '#f8bbd9',
     folderIcon: '#f06292',
   },
@@ -815,7 +815,7 @@ export const amberColors: ColorScheme = {
     whitespace: '#5d5000',
   },
   fileTree: {
-    gitIgnored: '#c4a000',
+    gitIgnored: '#68613f',
     fileIcon: '#ffecb3',
     folderIcon: '#ffb300',
   },
@@ -898,7 +898,7 @@ export const monochromeColors: ColorScheme = {
     whitespace: '#616161',
   },
   fileTree: {
-    gitIgnored: '#9e9e9e',
+    gitIgnored: '#616161',
     fileIcon: '#e0e0e0',
     folderIcon: '#757575',
   },
@@ -921,89 +921,6 @@ export const monochromeColors: ColorScheme = {
     swift: '#ff7043',
     dart: '#0098fb',
     default: '#e0e0e0',
-  },
-};
-
-// Cyberpunk theme - Neon green/cyan
-export const cyberpunkColors: ColorScheme = {
-  primary: {
-    main: '#00ff41',
-    light: '#39ff6a',
-    dark: '#00cc34',
-  },
-  secondary: {
-    main: '#00ffff',
-    light: '#4dffff',
-    dark: '#00cccc',
-  },
-  background: {
-    default: '#000a00',
-    paper: '#001a00',
-    elevated: '#002a00',
-  },
-  text: {
-    primary: '#e0ffe0',
-    secondary: '#b3ffb3',
-    disabled: '#66cc66',
-    hint: '#4daa4d',
-  },
-  border: {
-    main: '#004400',
-    light: '#006600',
-    dark: '#002200',
-  },
-  action: {
-    hover: 'rgba(0, 255, 255, 0.08)',
-    selected: 'rgba(0, 255, 255, 0.16)',
-    disabled: 'rgba(255, 255, 255, 0.26)',
-    focus: 'rgba(0, 255, 255, 0.16)',
-  },
-  status: {
-    error: '#ff0040',
-    warning: '#ffaa00',
-    success: '#00ff41',
-    info: '#00ffff',
-  },
-  sidebar: {
-    background: '#000500',
-    text: '#b3ffb3',
-    icon: '#66cc66',
-    iconActive: '#00ffff',
-    border: '#004400',
-  },
-  editor: {
-    background: '#000a00',
-    foreground: '#e0ffe0',
-    lineHighlight: '#001a00',
-    selection: '#004d00',
-    inactiveSelection: '#002200',
-    cursor: '#00ffff',
-    whitespace: '#006600',
-  },
-  fileTree: {
-    gitIgnored: '#66cc66',
-    fileIcon: '#b3ffb3',
-    folderIcon: '#00ffff',
-  },
-  fileTypes: {
-    folder: '#00ffff',
-    folderOpen: '#4dffff',
-    typescript: '#007acc',
-    javascript: '#f7df1e',
-    css: '#1572B6',
-    html: '#e14e1d',
-    json: '#42a5f5',
-    markdown: '#084c61',
-    python: '#3776ab',
-    java: '#f89820',
-    cpp: '#00599c',
-    csharp: '#9b4f96',
-    php: '#777bb3',
-    rust: '#ce422b',
-    go: '#00add8',
-    swift: '#ff7043',
-    dart: '#0098fb',
-    default: '#b3ffb3',
   },
 };
 
@@ -1030,8 +947,6 @@ export const getColorSchemeByName = (name: string): ColorScheme => {
       return amberColors;
     case 'monochrome':
       return monochromeColors;
-    case 'cyberpunk':
-      return cyberpunkColors;
     default:
       return darkColors;
   }
@@ -1049,7 +964,6 @@ export const getAvailableThemes = () => [
   { value: 'rose', label: 'Rose' },
   { value: 'amber', label: 'Amber' },
   { value: 'monochrome', label: 'Monochrome' },
-  { value: 'cyberpunk', label: 'Cyberpunk' },
 ];
 
 // Helper function to determine if a theme is dark

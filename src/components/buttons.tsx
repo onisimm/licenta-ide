@@ -8,6 +8,7 @@ export const DefaultButton = styled('button')(({ theme }) => ({
   padding: theme.spacing(0.75, 1.5),
   borderRadius: theme.shape.borderRadius,
   border: `.3px solid ${theme.palette.primary.main}`,
+  
   cursor: 'pointer',
   boxShadow: theme.shadows[1],
 

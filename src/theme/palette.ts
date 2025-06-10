@@ -10,7 +10,6 @@ import {
   roseColors,
   amberColors,
   monochromeColors,
-  cyberpunkColors,
   withAlpha,
   getColorSchemeByName,
   ColorScheme,
@@ -142,10 +141,6 @@ export const monochromePalette: PaletteOptions = createPaletteFromColorScheme(
   monochromeColors,
   'dark',
 );
-export const cyberpunkPalette: PaletteOptions = createPaletteFromColorScheme(
-  cyberpunkColors,
-  'dark',
-);
 
 // Helper function to get palette by theme name
 export const getPaletteByTheme = (themeName: string): PaletteOptions => {
@@ -170,8 +165,6 @@ export const getPaletteByTheme = (themeName: string): PaletteOptions => {
       return amberPalette;
     case 'monochrome':
       return monochromePalette;
-    case 'cyberpunk':
-      return cyberpunkPalette;
     default:
       return darkPalette;
   }

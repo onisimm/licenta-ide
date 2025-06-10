@@ -11,7 +11,6 @@ import {
   rosePalette,
   amberPalette,
   monochromePalette,
-  cyberpunkPalette,
   getPaletteByTheme,
 } from './palette';
 import components from './components';
@@ -182,10 +181,6 @@ export const monochromeTheme = createTheme(generalTheme, {
   palette: monochromePalette,
 });
 
-export const cyberpunkTheme = createTheme(generalTheme, {
-  palette: cyberpunkPalette,
-});
-
 // Helper function to get theme by name
 export const getThemeByName = (themeName: string) => {
   switch (themeName) {
@@ -209,8 +204,6 @@ export const getThemeByName = (themeName: string) => {
       return amberTheme;
     case 'monochrome':
       return monochromeTheme;
-    case 'cyberpunk':
-      return cyberpunkTheme;
     default:
       return darkTheme;
   }
