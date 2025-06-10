@@ -45,8 +45,9 @@ const MainComponent = memo(() => {
   });
 
   const handleSidebarResize = useCallback((newWidth: number) => {
-    // Constrain width between 260px and 500px
-    const constrainedWidth = Math.max(260, Math.min(500, newWidth));
+    // Constrain width between 260px and 75% of screen width
+    const maxWidth = Math.floor(window.innerWidth * 0.75);
+    const constrainedWidth = Math.max(260, Math.min(maxWidth, newWidth));
     setSidebarWidth(constrainedWidth);
     localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
   }, []);
