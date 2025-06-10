@@ -2,7 +2,7 @@ import { memo, useState, useCallback, useEffect } from 'react';
 import { Box, styled, Typography } from '@mui/material';
 import ContentSection from '../sections/content';
 import SidebarSection from '../sections/sidebar';
-import { useAppTitle } from '../shared/hooks';
+import { useProjectOperations } from '../shared/hooks';
 
 const SIDEBAR_WIDTH_KEY = 'sidebar-width';
 const DEFAULT_SIDEBAR_WIDTH = 260;
@@ -37,7 +37,10 @@ const FooterContainer = styled(Box)(({ theme }) => ({
 }));
 
 const MainComponent = memo(() => {
-  const { title } = useAppTitle();
+  const { hasFolder, folderName } = useProjectOperations();
+
+  // Generate title based on folder state
+  const title = hasFolder && folderName ? `SEditor — ${folderName}` : 'SEditor';
 
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);

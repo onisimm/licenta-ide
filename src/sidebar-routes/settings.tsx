@@ -3,16 +3,12 @@ import {
   Box,
   styled,
   Typography,
-  TextField,
-  Button,
   Paper,
-  Divider,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
 } from '@mui/material';
-import { useAppTitle } from '../shared/hooks';
 import { useThemeToggle } from '../theme/themeProvider';
 import { getAvailableThemes } from '../constants/colors';
 
@@ -44,23 +40,8 @@ const FieldContainer = styled(Box)(({ theme }) => ({
   gap: theme.spacing(1),
 }));
 
-const ButtonContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  gap: theme.spacing(1),
-  justifyContent: 'flex-end',
-}));
-
 export const SettingsSection = memo(() => {
-  const { title, updateTitle } = useAppTitle();
   const { currentTheme, setThemeByName } = useThemeToggle();
-  const [tempTitle, setTempTitle] = useState(title);
-
-  const handleTitleChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setTempTitle(event.target.value);
-    },
-    [],
-  );
 
   const handleThemeChange = useCallback(
     (event: any) => {
@@ -69,22 +50,6 @@ export const SettingsSection = memo(() => {
     },
     [setThemeByName],
   );
-
-  const handleSave = useCallback(() => {
-    updateTitle(tempTitle);
-  }, [tempTitle, updateTitle]);
-
-  const handleReset = useCallback(() => {
-    setTempTitle(title);
-  }, [title]);
-
-  const handleResetToDefault = useCallback(() => {
-    const defaultTitle = 'SEditor';
-    setTempTitle(defaultTitle);
-    updateTitle(defaultTitle);
-  }, [updateTitle]);
-
-  const hasChanges = tempTitle !== title;
 
   const availableThemes = getAvailableThemes();
 
@@ -121,50 +86,9 @@ export const SettingsSection = memo(() => {
       </SettingsPanel>
 
       <SettingsPanel elevation={1}>
-        <SectionTitle>Application</SectionTitle>
-        <FieldContainer>
-          <Typography variant="body2" color="text.secondary">
-            Application Title
-          </Typography>
-          <TextField
-            size="small"
-            value={tempTitle}
-            onChange={handleTitleChange}
-            placeholder="Enter application title"
-            fullWidth
-            variant="outlined"
-            helperText="This title will appear in the header bar"
-          />
-          <ButtonContainer>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={handleResetToDefault}
-              color="secondary">
-              Reset to Default
-            </Button>
-            {hasChanges && (
-              <>
-                <Button size="small" variant="outlined" onClick={handleReset}>
-                  Cancel
-                </Button>
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={handleSave}
-                  color="primary">
-                  Save
-                </Button>
-              </>
-            )}
-          </ButtonContainer>
-        </FieldContainer>
-      </SettingsPanel>
-
-      <SettingsPanel elevation={1}>
         <SectionTitle>About</SectionTitle>
         <Typography variant="body2" color="text.secondary">
-          Current Title: <strong>{title}</strong>
+          Application: <strong>SEditor</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Current Theme:{' '}
@@ -174,9 +98,9 @@ export const SettingsSection = memo(() => {
           </strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          This editor allows you to customize the application appearance and
-          other settings. Choose from {availableThemes.length} unique themes to
-          personalize your coding experience.
+          A modern code editor with {availableThemes.length} unique themes to
+          personalize your coding experience. The title automatically updates to
+          show the current folder when one is open.
         </Typography>
       </SettingsPanel>
     </SettingsContainer>
