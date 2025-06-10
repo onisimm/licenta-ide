@@ -23,6 +23,8 @@ const TabBarContainer = styled(Box)(({ theme }) => ({
 
 const TabsScrollContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
   flex: 1,
   overflowX: 'auto',
   backgroundColor: theme.palette.background.default,
@@ -41,6 +43,7 @@ const Tab = styled(Box, {
 })<{ isActive: boolean }>(({ theme, isActive }) => ({
   display: 'flex',
   alignItems: 'center',
+  gap: theme.spacing(0.5),
   padding: theme.spacing(0.5, 1),
   minWidth: 120,
   maxWidth: 200,
@@ -62,6 +65,7 @@ const TabIcon = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   fontSize: '16px',
+  width: '1rem',
   flexShrink: 0,
 }));
 
