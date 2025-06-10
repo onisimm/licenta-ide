@@ -99,7 +99,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
     const theme = useTheme();
-    const { isDarkMode } = useThemeToggle();
+    const { isDarkMode, currentTheme } = useThemeToggle();
 
     // Project operations hook - centralized file/folder operations
     const {
@@ -336,7 +336,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       };
     }, []);
 
-    // Update theme when isDarkMode changes
+    // Update theme when theme changes
     useEffect(() => {
       if (editorRef.current && monacoInstanceRef.current) {
         try {
@@ -384,7 +384,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           logError('Monaco Theme Switch', error);
         }
       }
-    }, [isDarkMode, theme.palette.editor]);
+    }, [currentTheme, theme.palette.editor]);
 
     const handleEditorDidMount = (
       editor: monaco.editor.IStandaloneCodeEditor,

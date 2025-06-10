@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useAppTitle } from '../shared/hooks';
 import { useThemeToggle } from '../theme/themeProvider';
+import { getAvailableThemes } from '../constants/colors';
 
 const SettingsContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -51,7 +52,7 @@ const ButtonContainer = styled(Box)(({ theme }) => ({
 
 export const SettingsSection = memo(() => {
   const { title, updateTitle } = useAppTitle();
-  const { toggleTheme, isDarkMode } = useThemeToggle();
+  const { currentTheme, setThemeByName } = useThemeToggle();
   const [tempTitle, setTempTitle] = useState(title);
 
   const handleTitleChange = useCallback(
@@ -64,14 +65,9 @@ export const SettingsSection = memo(() => {
   const handleThemeChange = useCallback(
     (event: any) => {
       const selectedTheme = event.target.value;
-      const shouldBeDark = selectedTheme === 'dark';
-
-      // Only toggle if the selection is different from current state
-      if (shouldBeDark !== isDarkMode) {
-        toggleTheme();
-      }
+      setThemeByName(selectedTheme);
     },
-    [isDarkMode, toggleTheme],
+    [setThemeByName],
   );
 
   const handleSave = useCallback(() => {
@@ -90,6 +86,8 @@ export const SettingsSection = memo(() => {
 
   const hasChanges = tempTitle !== title;
 
+  const availableThemes = getAvailableThemes();
+
   return (
     <SettingsContainer>
       <Typography variant="h6" sx={{ mb: 1 }}>
@@ -106,15 +104,18 @@ export const SettingsSection = memo(() => {
             <InputLabel id="theme-select-label">Select Theme</InputLabel>
             <Select
               labelId="theme-select-label"
-              value={isDarkMode ? 'dark' : 'light'}
+              value={currentTheme}
               onChange={handleThemeChange}
               label="Select Theme">
-              <MenuItem value="light">Light</MenuItem>
-              <MenuItem value="dark">Dark</MenuItem>
+              {availableThemes.map(theme => (
+                <MenuItem key={theme.value} value={theme.value}>
+                  {theme.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <Typography variant="caption" color="text.secondary">
-            Choose between light and dark appearance
+            Choose from {availableThemes.length} available themes
           </Typography>
         </FieldContainer>
       </SettingsPanel>
@@ -166,11 +167,16 @@ export const SettingsSection = memo(() => {
           Current Title: <strong>{title}</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Current Theme: <strong>{isDarkMode ? 'Dark' : 'Light'}</strong>
+          Current Theme:{' '}
+          <strong>
+            {availableThemes.find(t => t.value === currentTheme)?.label ||
+              currentTheme}
+          </strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
           This editor allows you to customize the application appearance and
-          other settings.
+          other settings. Choose from {availableThemes.length} unique themes to
+          personalize your coding experience.
         </Typography>
       </SettingsPanel>
     </SettingsContainer>

@@ -1,166 +1,178 @@
 import { PaletteOptions } from '@mui/material/styles';
-import { lightColors, darkColors, withAlpha } from '../constants/colors';
+import {
+  lightColors,
+  darkColors,
+  oceanColors,
+  forestColors,
+  sunsetColors,
+  purpleColors,
+  midnightColors,
+  roseColors,
+  amberColors,
+  monochromeColors,
+  cyberpunkColors,
+  withAlpha,
+  getColorSchemeByName,
+  ColorScheme,
+} from '../constants/colors';
 
-export const lightPalette: PaletteOptions = {
-  mode: 'light',
+// Helper function to create palette from color scheme
+const createPaletteFromColorScheme = (
+  colors: ColorScheme,
+  mode: 'light' | 'dark',
+): PaletteOptions => ({
+  mode,
   primary: {
-    main: lightColors.primary.main,
-    light: lightColors.primary.light,
-    dark: lightColors.primary.dark,
+    main: colors.primary.main,
+    light: colors.primary.light,
+    dark: colors.primary.dark,
   },
   secondary: {
-    main: lightColors.secondary.main,
-    light: lightColors.secondary.light,
-    dark: lightColors.secondary.dark,
+    main: colors.secondary.main,
+    light: colors.secondary.light,
+    dark: colors.secondary.dark,
   },
   background: {
-    default: lightColors.background.default,
-    paper: lightColors.background.paper,
+    default: colors.background.default,
+    paper: colors.background.paper,
   },
   text: {
-    primary: lightColors.text.primary,
-    secondary: lightColors.text.secondary,
-    disabled: lightColors.text.disabled,
+    primary: colors.text.primary,
+    secondary: colors.text.secondary,
+    disabled: colors.text.disabled,
   },
-  divider: lightColors.border.main,
+  divider: colors.border.main,
   action: {
-    hover: lightColors.action.hover,
-    selected: lightColors.action.selected,
-    disabled: lightColors.action.disabled,
-    focus: lightColors.action.focus,
+    hover: colors.action.hover,
+    selected: colors.action.selected,
+    disabled: colors.action.disabled,
+    focus: colors.action.focus,
   },
   error: {
-    main: lightColors.status.error,
-    light: withAlpha(lightColors.status.error, 0.1),
-    contrastText: '#ffffff',
+    main: colors.status.error,
+    light: withAlpha(colors.status.error, 0.1),
+    contrastText: mode === 'light' ? '#ffffff' : '#000000',
   },
   warning: {
-    main: lightColors.status.warning,
-    light: withAlpha(lightColors.status.warning, 0.1),
-    contrastText: '#ffffff',
+    main: colors.status.warning,
+    light: withAlpha(colors.status.warning, 0.1),
+    contrastText: mode === 'light' ? '#ffffff' : '#000000',
   },
   success: {
-    main: lightColors.status.success,
-    light: withAlpha(lightColors.status.success, 0.1),
-    contrastText: '#ffffff',
+    main: colors.status.success,
+    light: withAlpha(colors.status.success, 0.1),
+    contrastText: mode === 'light' ? '#ffffff' : '#000000',
   },
   info: {
-    main: lightColors.status.info,
-    light: withAlpha(lightColors.status.info, 0.1),
-    contrastText: '#ffffff',
+    main: colors.status.info,
+    light: withAlpha(colors.status.info, 0.1),
+    contrastText: mode === 'light' ? '#ffffff' : '#000000',
   },
   // Custom color categories
   sidebar: {
-    background: lightColors.sidebar.background,
-    text: lightColors.sidebar.text,
-    icon: lightColors.sidebar.icon,
-    iconActive: lightColors.sidebar.iconActive,
-    border: lightColors.sidebar.border,
+    background: colors.sidebar.background,
+    text: colors.sidebar.text,
+    icon: colors.sidebar.icon,
+    iconActive: colors.sidebar.iconActive,
+    border: colors.sidebar.border,
   },
   border: {
-    main: lightColors.border.main,
-    light: lightColors.border.light,
-    dark: lightColors.border.dark,
+    main: colors.border.main,
+    light: colors.border.light,
+    dark: colors.border.dark,
   },
   editor: {
-    background: lightColors.editor.background,
-    foreground: lightColors.editor.foreground,
-    lineHighlight: lightColors.editor.lineHighlight,
-    selection: lightColors.editor.selection,
-    inactiveSelection: lightColors.editor.inactiveSelection,
-    cursor: lightColors.editor.cursor,
-    whitespace: lightColors.editor.whitespace,
+    background: colors.editor.background,
+    foreground: colors.editor.foreground,
+    lineHighlight: colors.editor.lineHighlight,
+    selection: colors.editor.selection,
+    inactiveSelection: colors.editor.inactiveSelection,
+    cursor: colors.editor.cursor,
+    whitespace: colors.editor.whitespace,
   },
   fileTree: {
-    gitIgnored: lightColors.fileTree.gitIgnored,
-    fileIcon: lightColors.fileTree.fileIcon,
-    folderIcon: lightColors.fileTree.folderIcon,
+    gitIgnored: colors.fileTree.gitIgnored,
+    fileIcon: colors.fileTree.fileIcon,
+    folderIcon: colors.fileTree.folderIcon,
   },
-  fileTypes: lightColors.fileTypes,
+  fileTypes: colors.fileTypes,
   // Keep existing custom colors for compatibility
   easy: {
-    blue: lightColors.secondary.main,
+    blue: colors.secondary.main,
   },
-};
+});
 
-export const darkPalette: PaletteOptions = {
-  mode: 'dark',
-  primary: {
-    main: darkColors.primary.main,
-    light: darkColors.primary.light,
-    dark: darkColors.primary.dark,
-  },
-  secondary: {
-    main: darkColors.secondary.main,
-    light: darkColors.secondary.light,
-    dark: darkColors.secondary.dark,
-  },
-  background: {
-    default: darkColors.background.default,
-    paper: darkColors.background.paper,
-  },
-  text: {
-    primary: darkColors.text.primary,
-    secondary: darkColors.text.secondary,
-    disabled: darkColors.text.disabled,
-  },
-  divider: darkColors.border.main,
-  action: {
-    hover: darkColors.action.hover,
-    selected: darkColors.action.selected,
-    disabled: darkColors.action.disabled,
-    focus: darkColors.action.focus,
-  },
-  error: {
-    main: darkColors.status.error,
-    light: withAlpha(darkColors.status.error, 0.1),
-    contrastText: '#000000',
-  },
-  warning: {
-    main: darkColors.status.warning,
-    light: withAlpha(darkColors.status.warning, 0.1),
-    contrastText: '#000000',
-  },
-  success: {
-    main: darkColors.status.success,
-    light: withAlpha(darkColors.status.success, 0.1),
-    contrastText: '#000000',
-  },
-  info: {
-    main: darkColors.status.info,
-    light: withAlpha(darkColors.status.info, 0.1),
-    contrastText: '#000000',
-  },
-  // Custom color categories
-  sidebar: {
-    background: darkColors.sidebar.background,
-    text: darkColors.sidebar.text,
-    icon: darkColors.sidebar.icon,
-    iconActive: darkColors.sidebar.iconActive,
-    border: darkColors.sidebar.border,
-  },
-  border: {
-    main: darkColors.border.main,
-    light: darkColors.border.light,
-    dark: darkColors.border.dark,
-  },
-  editor: {
-    background: darkColors.editor.background,
-    foreground: darkColors.editor.foreground,
-    lineHighlight: darkColors.editor.lineHighlight,
-    selection: darkColors.editor.selection,
-    inactiveSelection: darkColors.editor.inactiveSelection,
-    cursor: darkColors.editor.cursor,
-    whitespace: darkColors.editor.whitespace,
-  },
-  fileTree: {
-    gitIgnored: darkColors.fileTree.gitIgnored,
-    fileIcon: darkColors.fileTree.fileIcon,
-    folderIcon: darkColors.fileTree.folderIcon,
-  },
-  fileTypes: darkColors.fileTypes,
-  // Keep existing custom colors for compatibility
-  easy: {
-    blue: darkColors.secondary.main,
-  },
+export const lightPalette: PaletteOptions = createPaletteFromColorScheme(
+  lightColors,
+  'light',
+);
+export const darkPalette: PaletteOptions = createPaletteFromColorScheme(
+  darkColors,
+  'dark',
+);
+export const oceanPalette: PaletteOptions = createPaletteFromColorScheme(
+  oceanColors,
+  'dark',
+);
+export const forestPalette: PaletteOptions = createPaletteFromColorScheme(
+  forestColors,
+  'dark',
+);
+export const sunsetPalette: PaletteOptions = createPaletteFromColorScheme(
+  sunsetColors,
+  'dark',
+);
+export const purplePalette: PaletteOptions = createPaletteFromColorScheme(
+  purpleColors,
+  'dark',
+);
+export const midnightPalette: PaletteOptions = createPaletteFromColorScheme(
+  midnightColors,
+  'dark',
+);
+export const rosePalette: PaletteOptions = createPaletteFromColorScheme(
+  roseColors,
+  'dark',
+);
+export const amberPalette: PaletteOptions = createPaletteFromColorScheme(
+  amberColors,
+  'dark',
+);
+export const monochromePalette: PaletteOptions = createPaletteFromColorScheme(
+  monochromeColors,
+  'dark',
+);
+export const cyberpunkPalette: PaletteOptions = createPaletteFromColorScheme(
+  cyberpunkColors,
+  'dark',
+);
+
+// Helper function to get palette by theme name
+export const getPaletteByTheme = (themeName: string): PaletteOptions => {
+  switch (themeName) {
+    case 'light':
+      return lightPalette;
+    case 'dark':
+      return darkPalette;
+    case 'ocean':
+      return oceanPalette;
+    case 'forest':
+      return forestPalette;
+    case 'sunset':
+      return sunsetPalette;
+    case 'purple':
+      return purplePalette;
+    case 'midnight':
+      return midnightPalette;
+    case 'rose':
+      return rosePalette;
+    case 'amber':
+      return amberPalette;
+    case 'monochrome':
+      return monochromePalette;
+    case 'cyberpunk':
+      return cyberpunkPalette;
+    default:
+      return darkPalette;
+  }
 };

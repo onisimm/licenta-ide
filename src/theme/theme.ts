@@ -1,6 +1,19 @@
 import { createTheme } from '@mui/material';
 
-import { lightPalette, darkPalette } from './palette';
+import {
+  lightPalette,
+  darkPalette,
+  oceanPalette,
+  forestPalette,
+  sunsetPalette,
+  purplePalette,
+  midnightPalette,
+  rosePalette,
+  amberPalette,
+  monochromePalette,
+  cyberpunkPalette,
+  getPaletteByTheme,
+} from './palette';
 import components from './components';
 import { ColorScheme } from '../constants/colors';
 
@@ -133,7 +146,72 @@ export const lightTheme = createTheme(generalTheme, {
   palette: lightPalette,
 });
 
-// Create the Dark Theme
 export const darkTheme = createTheme(generalTheme, {
   palette: darkPalette,
 });
+
+export const oceanTheme = createTheme(generalTheme, {
+  palette: oceanPalette,
+});
+
+export const forestTheme = createTheme(generalTheme, {
+  palette: forestPalette,
+});
+
+export const sunsetTheme = createTheme(generalTheme, {
+  palette: sunsetPalette,
+});
+
+export const purpleTheme = createTheme(generalTheme, {
+  palette: purplePalette,
+});
+
+export const midnightTheme = createTheme(generalTheme, {
+  palette: midnightPalette,
+});
+
+export const roseTheme = createTheme(generalTheme, {
+  palette: rosePalette,
+});
+
+export const amberTheme = createTheme(generalTheme, {
+  palette: amberPalette,
+});
+
+export const monochromeTheme = createTheme(generalTheme, {
+  palette: monochromePalette,
+});
+
+export const cyberpunkTheme = createTheme(generalTheme, {
+  palette: cyberpunkPalette,
+});
+
+// Helper function to get theme by name
+export const getThemeByName = (themeName: string) => {
+  switch (themeName) {
+    case 'light':
+      return lightTheme;
+    case 'dark':
+      return darkTheme;
+    case 'ocean':
+      return oceanTheme;
+    case 'forest':
+      return forestTheme;
+    case 'sunset':
+      return sunsetTheme;
+    case 'purple':
+      return purpleTheme;
+    case 'midnight':
+      return midnightTheme;
+    case 'rose':
+      return roseTheme;
+    case 'amber':
+      return amberTheme;
+    case 'monochrome':
+      return monochromeTheme;
+    case 'cyberpunk':
+      return cyberpunkTheme;
+    default:
+      return darkTheme;
+  }
+};
