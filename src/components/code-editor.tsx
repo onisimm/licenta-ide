@@ -483,7 +483,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           monacoInstance.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
             {
               noSemanticValidation: true,
-              noSyntaxValidation: false,
+              noSyntaxValidation: true,
               noSuggestionDiagnostics: false,
             },
           );

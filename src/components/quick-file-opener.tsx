@@ -121,35 +121,6 @@ const EmptyState = styled(Box)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
-// Helper function to collect all files from folder tree
-const collectAllFiles = (
-  items: TFolderTree[],
-  rootPath: string,
-  allFiles: FileEntry[] = [],
-): FileEntry[] => {
-  for (const item of items) {
-    if (item.isDirectory) {
-      // Recursively collect files from subdirectories
-      if (item.children && item.children.length > 0) {
-        collectAllFiles(item.children, rootPath, allFiles);
-      }
-    } else {
-      // Add file to collection
-      // Simple relative path calculation without using path module
-      const relativePath = item.path.startsWith(rootPath)
-        ? item.path.slice(rootPath.length + 1) // +1 to remove leading slash
-        : item.path;
-
-      allFiles.push({
-        name: item.name,
-        path: item.path,
-        relativePath: relativePath,
-      });
-    }
-  }
-  return allFiles;
-};
-
 export const QuickFileOpener: React.FC<QuickFileOpenerProps> = ({
   open,
   onClose,
@@ -158,15 +129,84 @@ export const QuickFileOpener: React.FC<QuickFileOpenerProps> = ({
   const { folderStructure, folderPath } = useProjectOperations();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [allFiles, setAllFiles] = useState<FileEntry[]>([]);
+  const [isBackgroundComplete, setIsBackgroundComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Get all files from the project
-  const allFiles = useMemo(() => {
-    if (!folderStructure || !folderStructure.tree || !folderPath) {
-      return [];
-    }
+  // Load all files when modal opens or folder changes
+  useEffect(() => {
+    const loadAllFiles = async () => {
+      if (!open || !folderPath) {
+        return;
+      }
 
-    return collectAllFiles(folderStructure.tree, folderPath);
-  }, [folderStructure, folderPath]);
+      setIsLoading(true);
+      try {
+        // Get all files from complete tree structure (including background-loaded files)
+        const result = await window.electron.getAllFilesForQuickOpen();
+
+        if (result.files) {
+          setAllFiles(result.files);
+          setIsBackgroundComplete(result.isBackgroundComplete);
+
+          console.log(`📁 Quick Open loaded ${result.files.length} files`);
+          if (!result.isBackgroundComplete) {
+            console.log(
+              '🔄 Background loading still in progress - some files may be missing',
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Error loading files for quick open:', error);
+        setAllFiles([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAllFiles();
+  }, [open, folderPath]);
+
+  // Listen for background loading completion to refresh file list
+  useEffect(() => {
+    if (!open) return;
+
+    const handleTreeLoadingComplete = () => {
+      console.log(
+        '🎉 Background loading completed - refreshing quick open file list',
+      );
+      // Reload all files when background loading completes
+      const loadAllFiles = async () => {
+        try {
+          const result = await window.electron.getAllFilesForQuickOpen();
+          if (result.files) {
+            setAllFiles(result.files);
+            setIsBackgroundComplete(true);
+            console.log(
+              `📁 Quick Open refreshed with ${result.files.length} complete files`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            'Error refreshing files after background loading:',
+            error,
+          );
+        }
+      };
+      loadAllFiles();
+    };
+
+    // Add listener for background loading completion
+    const removeListener = window.electron.onTreeLoadingComplete(
+      handleTreeLoadingComplete,
+    );
+
+    return () => {
+      if (removeListener) {
+        removeListener();
+      }
+    };
+  }, [open]);
 
   // Filter files based on search query using regex
   const { matchingFilesCount, filteredFiles, totalMatchCount } = useMemo(() => {
@@ -310,6 +350,11 @@ export const QuickFileOpener: React.FC<QuickFileOpenerProps> = ({
           />
           <FileCountIndicator>
             {matchingFilesCount} of {totalMatchCount} files
+            {!isBackgroundComplete && (
+              <span style={{ color: '#FFA726', marginLeft: '8px' }}>
+                (background loading...)
+              </span>
+            )}
           </FileCountIndicator>
           <FileCountIndicator>
             (Always showing top 10 matches)

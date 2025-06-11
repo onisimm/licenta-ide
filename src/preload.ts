@@ -144,6 +144,47 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  // Get all files for quick-open functionality
+  getAllFilesForQuickOpen: async () => {
+    try {
+      const result = await ipcRenderer.invoke('get-all-files-for-quick-open');
+      return result;
+    } catch (error) {
+      console.error('Error in getAllFilesForQuickOpen preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  // Get background loading status
+  getBackgroundLoadingStatus: async () => {
+    try {
+      const result = await ipcRenderer.invoke('get-background-loading-status');
+      return result;
+    } catch (error) {
+      console.error('Error in getBackgroundLoadingStatus preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  // Background loading event listeners
+  onTreeLoadingProgress: (callback: (data: any) => void) => {
+    const listener = (event: any, data: any) => callback(data);
+    ipcRenderer.on('tree-loading-progress', listener);
+    return () => ipcRenderer.removeListener('tree-loading-progress', listener);
+  },
+  onTreeInitialUpdate: (callback: (data: any) => void) => {
+    const listener = (event: any, data: any) => callback(data);
+    ipcRenderer.on('tree-initial-update', listener);
+    return () => ipcRenderer.removeListener('tree-initial-update', listener);
+  },
+  onTreeLoadingComplete: (callback: (data: any) => void) => {
+    const listener = (event: any, data: any) => callback(data);
+    ipcRenderer.on('tree-loading-complete', listener);
+    return () => ipcRenderer.removeListener('tree-loading-complete', listener);
+  },
+  onTreeLoadingError: (callback: (data: any) => void) => {
+    const listener = (event: any, data: any) => callback(data);
+    ipcRenderer.on('tree-loading-error', listener);
+    return () => ipcRenderer.removeListener('tree-loading-error', listener);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);
