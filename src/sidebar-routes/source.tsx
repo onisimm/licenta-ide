@@ -12,6 +12,11 @@ import {
   alpha,
   CircularProgress,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -24,6 +29,8 @@ import {
   ExpandLess as ExpandLessIcon,
   CheckCircle as CheckCircleIcon,
   RadioButtonUnchecked as UnstagedIcon,
+  Restore as RestoreIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '../shared/hooks';
 
@@ -225,6 +232,13 @@ export const SourceSection = memo(() => {
     changes: true,
     staged: true,
   });
+  const [restoreDialog, setRestoreDialog] = useState<{
+    open: boolean;
+    filePath: string;
+  }>({
+    open: false,
+    filePath: '',
+  });
 
   // Get folder info from Redux
   const folderStructure = useAppSelector(state => state.main.folderStructure);
@@ -347,6 +361,32 @@ export const SourceSection = memo(() => {
       ...prev,
       [section]: !prev[section],
     }));
+  }, []);
+
+  // Handle restore file confirmation
+  const handleRestoreFileClick = useCallback((filePath: string) => {
+    setRestoreDialog({
+      open: true,
+      filePath,
+    });
+  }, []);
+
+  // Handle restore file confirmation
+  const handleRestoreFileConfirm = useCallback(async () => {
+    if (!folderPath || !restoreDialog.filePath) return;
+
+    try {
+      await window.electron.gitRestoreFile(folderPath, restoreDialog.filePath);
+      await loadGitStatus();
+      setRestoreDialog({ open: false, filePath: '' });
+    } catch (error) {
+      console.error('Error restoring file:', error);
+    }
+  }, [folderPath, restoreDialog.filePath, loadGitStatus]);
+
+  // Handle restore dialog close
+  const handleRestoreDialogClose = useCallback(() => {
+    setRestoreDialog({ open: false, filePath: '' });
   }, []);
 
   // No folder opened
@@ -517,6 +557,27 @@ export const SourceSection = memo(() => {
                       variant="outlined"
                     />
                     <FileName>{file.path}</FileName>
+                    {/* Only show restore for modified files (not new/untracked files) */}
+                    {file.status !== 'untracked' && file.status !== 'added' && (
+                      <Tooltip title={`Discard changes to "${file.path}"`}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRestoreFileClick(file.path)}
+                          sx={theme => ({
+                            padding: 0.25,
+                            color: theme.palette.text.secondary,
+                            '&:hover': {
+                              color: theme.palette.warning.main,
+                              backgroundColor: alpha(
+                                theme.palette.warning.main,
+                                0.1,
+                              ),
+                            },
+                          })}>
+                          <UndoIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </FileItem>
                 ))}
               </Box>
@@ -614,6 +675,37 @@ export const SourceSection = memo(() => {
           </Button>
         </CommitSection>
       )}
+
+      {/* Restore Confirmation Dialog */}
+      <Dialog
+        open={restoreDialog.open}
+        onClose={handleRestoreDialogClose}
+        aria-labelledby="restore-dialog-title"
+        aria-describedby="restore-dialog-description">
+        <DialogTitle id="restore-dialog-title">Discard Changes?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="restore-dialog-description">
+            Are you sure you want to discard all changes to{' '}
+            <strong>{restoreDialog.filePath}</strong>?
+            <br />
+            <br />
+            This will permanently delete your changes and restore the file to
+            its last committed state. This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleRestoreDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRestoreFileConfirm}
+            color="warning"
+            variant="contained"
+            startIcon={<UndoIcon />}>
+            Discard Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </SourceContainer>
   );
 });

@@ -1638,6 +1638,33 @@ ipcMain.handle('git-pull', async (event, folderPath: string) => {
   }
 });
 
+ipcMain.handle(
+  'git-restore-file',
+  async (event, folderPath: string, filePath: string) => {
+    try {
+      console.log('🔄 Restoring file to last committed state:', filePath);
+
+      // Try modern Git first (Git 2.23+), fallback to older syntax
+      try {
+        await execAsync(`git restore "${filePath}"`, {
+          cwd: folderPath,
+        });
+      } catch (restoreError) {
+        // Fallback to older Git syntax
+        await execAsync(`git checkout -- "${filePath}"`, {
+          cwd: folderPath,
+        });
+      }
+
+      console.log('✅ File restored successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error restoring file:', error);
+      throw error;
+    }
+  },
+);
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({

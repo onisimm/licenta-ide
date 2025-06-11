@@ -173,6 +173,19 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  gitRestoreFile: async (folderPath: string, filePath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-restore-file',
+        folderPath,
+        filePath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitRestoreFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
 
   // Menu event listeners
   onMenuSaveFile: (callback: () => void) => {

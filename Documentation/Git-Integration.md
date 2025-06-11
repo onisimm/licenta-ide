@@ -12,6 +12,7 @@ The IDE includes comprehensive Git integration in the **Source** section, provid
 - **Enhanced Git commands**: Improved staging/unstaging commands with better error handling and modern Git syntax support
 - **Better file path handling**: Added proper quoting for file paths with spaces and special characters
 - **Improved UI feedback**: Enhanced staging/unstaging buttons with better visual feedback and tooltips
+- **Added restore functionality**: New feature to discard changes and restore files to their last committed state
 
 ### **Technical Improvements**
 
@@ -19,6 +20,7 @@ The IDE includes comprehensive Git integration in the **Source** section, provid
 - **Command compatibility**: Added fallback from modern Git commands (`git restore`) to older syntax (`git reset`) for better compatibility
 - **Enhanced debugging**: Added comprehensive logging for Git operations to help troubleshoot issues
 - **UI enhancements**: Improved staging buttons with clear visual states (+ for staging, - for unstaging)
+- **Restore operations**: Added `git restore` commands with fallback to `git checkout --` for discarding changes
 
 ## Features
 
@@ -35,6 +37,7 @@ The IDE includes comprehensive Git integration in the **Source** section, provid
 - **Bulk operations** for staging or unstaging all files at once
 - **Visual status indicators** showing staged vs unstaged files
 - **Collapsible sections** for organized file management
+- **Restore functionality** to discard changes and revert files to last committed state
 
 ### 💾 **Commit Operations**
 
@@ -143,6 +146,7 @@ interface GitFileStatus {
 | `git-commit` | Commit staged files | `folderPath, message` | `{ success: true }` |
 | `git-push` | Push to remote | `folderPath: string` | `{ success: true }` |
 | `git-pull` | Pull from remote | `folderPath: string` | `{ success: true }` |
+| `git-restore-file` | Restore file to last commit | `folderPath, filePath` | `{ success: true }` |
 
 ## Workflow Examples
 
@@ -166,6 +170,16 @@ interface GitFileStatus {
 1. **Stage all changes** - Click "+" icon in Changes section header
 2. **Unstage all files** - Click "-" icon in Staged Changes section header
 3. **Review before commit** - Verify staged files before committing
+
+### **Discard Changes (Restore)**
+
+1. **Modified files only** - Restore button (↶) appears only for modified files, not new/untracked files
+2. **Click restore button** - Click the undo icon next to any modified file
+3. **Confirm action** - Review the confirmation dialog carefully
+4. **Permanent operation** - Click "Discard Changes" to permanently revert the file
+5. **File restored** - File returns to its last committed state, changes are lost forever
+
+**⚠️ Warning**: Restore operation permanently deletes changes and cannot be undone!
 
 ## Error Handling
 
