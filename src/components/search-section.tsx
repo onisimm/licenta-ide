@@ -11,6 +11,7 @@ import {
   Typography,
   Paper,
   CircularProgress,
+  Button,
   styled,
   alpha,
 } from '@mui/material';
@@ -245,8 +246,37 @@ const PreviewText = styled('span')(({ theme }) => ({
   fontSize: '12px',
 }));
 
+const LoadMoreContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  textAlign: 'center',
+  borderTop: `1px solid ${theme.palette.divider}`,
+  marginTop: theme.spacing(1),
+}));
+
+const LoadMoreButton = styled(Button)(({ theme }) => ({
+  textTransform: 'none',
+  fontSize: '13px',
+  fontWeight: 500,
+  borderRadius: theme.spacing(0.75),
+  padding: theme.spacing(1, 3),
+  borderColor: theme.palette.text.secondary,
+  color: theme.palette.text.secondary,
+
+  '&:hover': {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: alpha(theme.palette.primary.main, 0.04),
+    color: theme.palette.primary.main,
+  },
+
+  '&:disabled': {
+    borderColor: theme.palette.action.disabled,
+    color: theme.palette.action.disabled,
+  },
+}));
+
 export const SearchSection: React.FC = () => {
   const [currentSearchId, setCurrentSearchId] = useState<number>(0);
+  const [displayLimit, setDisplayLimit] = useState<number>(100); // Pagination state
 
   const { hasFolder, folderName, searchInFolder, openFileAtLine } =
     useProjectOperations();
@@ -272,6 +302,34 @@ export const SearchSection: React.FC = () => {
   // Ref to track the latest search ID to ignore outdated results
   const latestSearchIdRef = useRef(0);
 
+  // Reset display limit when new search results come in
+  useEffect(() => {
+    if (searchResults) {
+      setDisplayLimit(100);
+    }
+  }, [searchResults]);
+
+  // Get paginated results
+  const { displayedResults, hasMore, totalFiles } = useMemo(() => {
+    if (!searchResults) {
+      return { displayedResults: [], hasMore: false, totalFiles: 0 };
+    }
+
+    const displayed = searchResults.results.slice(0, displayLimit);
+    const hasMoreResults = searchResults.results.length > displayLimit;
+
+    return {
+      displayedResults: displayed,
+      hasMore: hasMoreResults,
+      totalFiles: searchResults.results.length,
+    };
+  }, [searchResults, displayLimit]);
+
+  // Load more results
+  const handleLoadMore = useCallback(() => {
+    setDisplayLimit(prev => prev + 100);
+  }, []);
+
   // Toggle file expansion
   const toggleFileExpansion = useCallback(
     (filePath: string) => {
@@ -280,13 +338,15 @@ export const SearchSection: React.FC = () => {
     [dispatch],
   );
 
-  // When new search results come in, expand all files by default
+  // When new search results come in, expand all files by default (only for displayed results)
   useEffect(() => {
-    if (searchResults) {
-      const allFilePaths = searchResults.results.map(result => result.filePath);
-      dispatch(setSearchExpandedFiles(allFilePaths));
+    if (searchResults && displayedResults.length > 0) {
+      const displayedFilePaths = displayedResults.map(
+        result => result.filePath,
+      );
+      dispatch(setSearchExpandedFiles(displayedFilePaths));
     }
-  }, [searchResults, dispatch]);
+  }, [searchResults, displayedResults, dispatch]);
 
   // Debounced search function with cancellation support
   const debouncedSearch = useMemo(
@@ -555,6 +615,15 @@ export const SearchSection: React.FC = () => {
               {searchResults.totalMatches !== 1 ? 's' : ''} found in{' '}
               {searchResults.fileCount} file
               {searchResults.fileCount !== 1 ? 's' : ''}
+              {displayedResults.length < totalFiles && (
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="primary.main"
+                  sx={{ ml: 1 }}>
+                  (showing {displayedResults.length} of {totalFiles} files)
+                </Typography>
+              )}
               {searchResults.filesSearched && (
                 <Typography
                   component="span"
@@ -575,7 +644,7 @@ export const SearchSection: React.FC = () => {
           </ResultsSummary>
 
           {/* File tree-style results */}
-          {searchResults.results.map(fileResult => {
+          {displayedResults.map(fileResult => {
             const isExpanded = expandedFilesSet.has(fileResult.filePath);
 
             return (
@@ -615,12 +684,32 @@ export const SearchSection: React.FC = () => {
             );
           })}
 
-          {searchResults.results.length === 0 && (
+          {displayedResults.length === 0 && (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 No results found for "{searchResults.query}"
               </Typography>
             </Paper>
+          )}
+
+          {hasMore && (
+            <LoadMoreContainer>
+              <LoadMoreButton
+                variant="outlined"
+                onClick={handleLoadMore}
+                disabled={isSearching}>
+                {isSearching ? (
+                  <>
+                    <CircularProgress size={16} sx={{ mr: 1 }} />
+                    Loading...
+                  </>
+                ) : (
+                  `Load more (${
+                    totalFiles - displayedResults.length
+                  } remaining)`
+                )}
+              </LoadMoreButton>
+            </LoadMoreContainer>
           )}
         </ResultsContainer>
       )}
