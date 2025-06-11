@@ -2323,6 +2323,43 @@ const createMenu = () => {
             }
           },
         },
+        { type: 'separator' },
+        {
+          label: 'Focus Explorer',
+          accelerator: 'CmdOrCtrl+Shift+E',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-focus-explorer');
+            }
+          },
+        },
+        {
+          label: 'Focus Search',
+          accelerator: 'CmdOrCtrl+Shift+S',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-focus-search');
+            }
+          },
+        },
+        {
+          label: 'Focus Git',
+          accelerator: 'CmdOrCtrl+Shift+G',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-focus-git');
+            }
+          },
+        },
+        {
+          label: 'Focus AI Chat',
+          accelerator: 'CmdOrCtrl+Shift+A',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-focus-aichat');
+            }
+          },
+        },
       ],
     },
     {

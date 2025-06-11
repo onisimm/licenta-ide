@@ -1,6 +1,6 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { Box, styled } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import IconList from '../components/icon-list';
 import { IconListName } from '../types/icon';
 import { topIcons, bottomIcons } from '../config/icons';
@@ -61,12 +61,27 @@ const IconListContainer = styled(Box)(({ theme }) => ({
 }));
 
 const SidebarSection = memo(({ width, onResize }: SidebarSectionProps) => {
-  const [activeIcon, setActiveIcon] = useState(IconListName.files);
   const [isDragging, setIsDragging] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine active icon based on current route
+  const getActiveIconFromRoute = (pathname: string): IconListName => {
+    if (pathname.includes('/files')) return IconListName.files;
+    if (pathname.includes('/search')) return IconListName.search;
+    if (pathname.includes('/source')) return IconListName.source;
+    if (pathname.includes('/aichat')) return IconListName.aichat;
+    if (pathname.includes('/profile')) return IconListName.profile;
+    if (pathname.includes('/settings')) return IconListName.settings;
+    return IconListName.files; // default to files
+  };
+
+  const activeIcon = getActiveIconFromRoute(location.pathname);
 
   const onIconClick = (name: IconListName) => {
-    setActiveIcon(name);
+    // The Link component in Icon will handle navigation
+    // This callback is mainly for any additional logic if needed
   };
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -104,6 +119,71 @@ const SidebarSection = memo(({ width, onResize }: SidebarSectionProps) => {
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Keyboard shortcut handler
+  const handleKeyboardShortcut = useCallback(
+    (event: KeyboardEvent) => {
+      // Check for Cmd+Shift on Mac or Ctrl+Shift on Windows/Linux
+      const isMac =
+        navigator.userAgent.includes('Macintosh') ||
+        navigator.platform.includes('Mac');
+      const isShortcutKey =
+        (isMac ? event.metaKey : event.ctrlKey) && event.shiftKey;
+
+      if (isShortcutKey) {
+        switch (event.key.toLowerCase()) {
+          case 'e':
+            event.preventDefault();
+            navigate('/main_window/files');
+            break;
+          case 's':
+            event.preventDefault();
+            navigate('/main_window/search');
+            break;
+          case 'g':
+            event.preventDefault();
+            navigate('/main_window/source');
+            break;
+          case 'a':
+            event.preventDefault();
+            navigate('/main_window/aichat');
+            break;
+        }
+      }
+    },
+    [navigate],
+  );
+
+  // Add keyboard event listeners
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyboardShortcut);
+    return () => {
+      document.removeEventListener('keydown', handleKeyboardShortcut);
+    };
+  }, [handleKeyboardShortcut]);
+
+  // Add menu event listeners for focus shortcuts
+  useEffect(() => {
+    const unsubscribeExplorer = window.electron?.onMenuFocusExplorer?.(() => {
+      navigate('/main_window/files');
+    });
+    const unsubscribeSearch = window.electron?.onMenuFocusSearch?.(() => {
+      navigate('/main_window/search');
+    });
+    const unsubscribeGit = window.electron?.onMenuFocusGit?.(() => {
+      navigate('/main_window/source');
+    });
+    const unsubscribeAIChat = window.electron?.onMenuFocusAIChat?.(() => {
+      navigate('/main_window/aichat');
+    });
+
+    return () => {
+      unsubscribeExplorer?.();
+      unsubscribeSearch?.();
+      unsubscribeGit?.();
+      unsubscribeAIChat?.();
+    };
+  }, [navigate]);
 
   return (
     <SidebarContainer ref={sidebarRef}>

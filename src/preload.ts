@@ -331,6 +331,26 @@ const renderer = {
     ipcRenderer.on('menu-open-terminal', listener);
     return () => ipcRenderer.removeListener('menu-open-terminal', listener);
   },
+  onMenuFocusExplorer: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-focus-explorer', listener);
+    return () => ipcRenderer.removeListener('menu-focus-explorer', listener);
+  },
+  onMenuFocusSearch: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-focus-search', listener);
+    return () => ipcRenderer.removeListener('menu-focus-search', listener);
+  },
+  onMenuFocusGit: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-focus-git', listener);
+    return () => ipcRenderer.removeListener('menu-focus-git', listener);
+  },
+  onMenuFocusAIChat: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-focus-aichat', listener);
+    return () => ipcRenderer.removeListener('menu-focus-aichat', listener);
+  },
   searchInFolder: async (folderPath: string, searchQuery: string) => {
     try {
       const result = await ipcRenderer.invoke(

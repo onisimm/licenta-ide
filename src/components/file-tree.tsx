@@ -49,40 +49,44 @@ const TreeContainer = styled(Box)(({ theme }) => ({
 }));
 
 const TreeItem = styled(Box, {
-  shouldForwardProp: prop => prop !== 'level' && prop !== 'isHovered',
-})<{ level: number; isHovered: boolean }>(({ theme, level, isHovered }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  paddingLeft: theme.spacing(level + 1),
-  paddingRight: theme.spacing(1),
-  paddingTop: theme.spacing(0.25),
-  paddingBottom: theme.spacing(0.25),
-  cursor: 'pointer',
-  fontSize: '13px',
-  color: theme.palette.text.primary,
-  userSelect: 'none',
-  minHeight: 22,
-  position: 'relative',
+  shouldForwardProp: prop =>
+    prop !== 'level' && prop !== 'isHovered' && prop !== 'isSelected',
+})<{ level: number; isHovered: boolean; isSelected: boolean }>(
+  ({ theme, level, isHovered, isSelected }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    paddingLeft: theme.spacing(level + 1),
+    paddingRight: theme.spacing(1),
+    paddingTop: theme.spacing(0.25),
+    paddingBottom: theme.spacing(0.25),
+    cursor: 'pointer',
+    fontSize: '13px',
+    color: theme.palette.text.primary,
+    userSelect: 'none',
+    minHeight: 22,
+    position: 'relative',
+    backgroundColor: isSelected ? theme.palette.action.hover : 'transparent',
 
-  '&:hover': {
-    backgroundColor: isHovered ? theme.palette.action.hover : 'transparent',
-  },
-  '&:active': {
-    backgroundColor: theme.palette.action.hover,
-  },
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
+    },
+    '&:active': {
+      backgroundColor: theme.palette.action.hover,
+    },
 
-  // Custom hover effect for better UX
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    pointerEvents: 'none',
-  },
-}));
+    // Custom hover effect for better UX
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      backgroundColor: 'transparent',
+      pointerEvents: 'none',
+    },
+  }),
+);
 
 const ExpandIcon = styled(Box)<{
   isExpanded: boolean;
@@ -162,6 +166,12 @@ const FileItem: React.FC<FileItemProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const dispatch = useAppDispatch();
+  const lastClickedItem = useAppSelector(
+    state => state.main.sidebarState.lastClickedItem,
+  );
+
+  // Check if this item is the currently selected one
+  const isSelected = lastClickedItem?.path === item.path;
 
   const handleToggle = useCallback(async () => {
     if (!item.isDirectory) return;
@@ -240,6 +250,7 @@ const FileItem: React.FC<FileItemProps> = ({
         <TreeItem
           level={level}
           isHovered={isHovered}
+          isSelected={isSelected}
           onClick={handleClick}
           onContextMenu={handleRightClick}
           onMouseEnter={() => setIsHovered(true)}
