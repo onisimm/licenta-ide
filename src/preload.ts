@@ -3,36 +3,28 @@
 
 import { ipcRenderer, contextBridge } from 'electron';
 
-// Helper function to normalize errors in the preload context
-const normalizeError = (error: unknown): Error => {
+// Normalize errors to prevent serialization issues
+const normalizeError = (error: any): Error => {
   if (error instanceof Error) {
-    return error;
-  }
-
-  if (error && typeof error === 'object' && 'type' in error) {
-    // This might be an Event object
-    const event = error as any;
-    return new Error(`IPC Event error: ${event.type || 'Unknown event'}`);
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    } as Error;
   }
 
   if (typeof error === 'string') {
     return new Error(error);
   }
 
-  if (error && typeof error === 'object') {
-    const errorObj = error as any;
-    const message = errorObj.message || errorObj.error || errorObj.toString();
-    return new Error(`IPC error: ${message}`);
-  }
-
-  return new Error('Unknown IPC error occurred');
+  return new Error('Unknown error occurred');
 };
 
 const renderer = {
   openFolder: async () => {
     try {
-      const folder = await ipcRenderer.invoke('open-folder');
-      return folder;
+      const result = await ipcRenderer.invoke('open-folder');
+      return result;
     } catch (error) {
       console.error('Error in openFolder preload:', error);
       throw normalizeError(error);
@@ -49,8 +41,8 @@ const renderer = {
   },
   getFolder: async () => {
     try {
-      const folder = await ipcRenderer.invoke('get-folder');
-      return folder;
+      const result = await ipcRenderer.invoke('get-folder');
+      return result;
     } catch (error) {
       console.error('Error in getFolder preload:', error);
       throw normalizeError(error);
@@ -71,16 +63,6 @@ const renderer = {
   readFile: async (filePath: string) => {
     try {
       const result = await ipcRenderer.invoke('read-file', filePath);
-
-      // Additional validation to ensure we have proper file data
-      if (!result || typeof result !== 'object') {
-        throw new Error('Invalid file data received from main process');
-      }
-
-      if (!result.path || !result.name || typeof result.content !== 'string') {
-        throw new Error('Malformed file data structure');
-      }
-
       return result;
     } catch (error) {
       console.error('Error in readFile preload:', error);
@@ -96,6 +78,102 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+
+  // Git operations
+  getGitStatus: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('get-git-status', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in getGitStatus preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  getGitBranch: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('get-git-branch', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in getGitBranch preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitStageFile: async (folderPath: string, filePath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-stage-file',
+        folderPath,
+        filePath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitStageFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitUnstageFile: async (folderPath: string, filePath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-unstage-file',
+        folderPath,
+        filePath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitUnstageFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitStageAll: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-stage-all', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitStageAll preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitUnstageAll: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-unstage-all', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitUnstageAll preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitCommit: async (folderPath: string, message: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-commit',
+        folderPath,
+        message,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitCommit preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitPush: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-push', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitPush preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitPull: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-pull', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitPull preload:', error);
+      throw normalizeError(error);
+    }
+  },
+
   // Menu event listeners
   onMenuSaveFile: (callback: () => void) => {
     const listener = () => callback();
@@ -144,7 +222,6 @@ const renderer = {
       throw normalizeError(error);
     }
   },
-  // Get all files for quick-open functionality
   getAllFilesForQuickOpen: async () => {
     try {
       const result = await ipcRenderer.invoke('get-all-files-for-quick-open');
@@ -154,34 +231,25 @@ const renderer = {
       throw normalizeError(error);
     }
   },
-  // Get background loading status
-  getBackgroundLoadingStatus: async () => {
-    try {
-      const result = await ipcRenderer.invoke('get-background-loading-status');
-      return result;
-    } catch (error) {
-      console.error('Error in getBackgroundLoadingStatus preload:', error);
-      throw normalizeError(error);
-    }
-  },
-  // Background loading event listeners
-  onTreeLoadingProgress: (callback: (data: any) => void) => {
-    const listener = (event: any, data: any) => callback(data);
-    ipcRenderer.on('tree-loading-progress', listener);
-    return () => ipcRenderer.removeListener('tree-loading-progress', listener);
-  },
+
+  // Tree loading events
   onTreeInitialUpdate: (callback: (data: any) => void) => {
-    const listener = (event: any, data: any) => callback(data);
+    const listener = (_event: any, data: any) => callback(data);
     ipcRenderer.on('tree-initial-update', listener);
     return () => ipcRenderer.removeListener('tree-initial-update', listener);
   },
+  onTreeLoadingProgress: (callback: (data: any) => void) => {
+    const listener = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('tree-loading-progress', listener);
+    return () => ipcRenderer.removeListener('tree-loading-progress', listener);
+  },
   onTreeLoadingComplete: (callback: (data: any) => void) => {
-    const listener = (event: any, data: any) => callback(data);
+    const listener = (_event: any, data: any) => callback(data);
     ipcRenderer.on('tree-loading-complete', listener);
     return () => ipcRenderer.removeListener('tree-loading-complete', listener);
   },
   onTreeLoadingError: (callback: (data: any) => void) => {
-    const listener = (event: any, data: any) => callback(data);
+    const listener = (_event: any, data: any) => callback(data);
     ipcRenderer.on('tree-loading-error', listener);
     return () => ipcRenderer.removeListener('tree-loading-error', listener);
   },
