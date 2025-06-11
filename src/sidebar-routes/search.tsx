@@ -309,21 +309,78 @@ export const SearchSection: React.FC = () => {
     }
   }, [searchResults]);
 
-  // Get paginated results
-  const { displayedResults, hasMore, totalFiles } = useMemo(() => {
-    if (!searchResults) {
-      return { displayedResults: [], hasMore: false, totalFiles: 0 };
-    }
+  // Get paginated results - limit by lines, not files
+  const { displayedResults, hasMore, totalLines, totalFiles, displayedLines } =
+    useMemo(() => {
+      if (!searchResults) {
+        return {
+          displayedResults: [],
+          hasMore: false,
+          totalLines: 0,
+          totalFiles: 0,
+          displayedLines: 0,
+        };
+      }
 
-    const displayed = searchResults.results.slice(0, displayLimit);
-    const hasMoreResults = searchResults.results.length > displayLimit;
+      let lineCount = 0;
+      const displayed: SearchFileResult[] = [];
+      let hasMoreResults = false;
 
-    return {
-      displayedResults: displayed,
-      hasMore: hasMoreResults,
-      totalFiles: searchResults.results.length,
-    };
-  }, [searchResults, displayLimit]);
+      for (const fileResult of searchResults.results) {
+        const remainingLimit = displayLimit - lineCount;
+
+        if (remainingLimit <= 0) {
+          hasMoreResults = true;
+          break;
+        }
+
+        // If this file's matches fit within the remaining limit, include the whole file
+        if (fileResult.matches.length <= remainingLimit) {
+          displayed.push(fileResult);
+          lineCount += fileResult.matches.length;
+        } else {
+          // If this file has more matches than the remaining limit, include partial matches
+          const truncatedFileResult: SearchFileResult = {
+            ...fileResult,
+            matches: fileResult.matches.slice(0, remainingLimit),
+            totalMatches: remainingLimit, // Update the match count for display
+          };
+          displayed.push(truncatedFileResult);
+          lineCount += remainingLimit;
+          hasMoreResults = true;
+          break;
+        }
+      }
+
+      // Calculate total lines across all files
+      const totalMatchLines = searchResults.results.reduce(
+        (sum, file) => sum + file.matches.length,
+        0,
+      );
+
+      console.log(
+        'Displayed results:',
+        displayed.length,
+        'files with',
+        lineCount,
+        'lines',
+      );
+      console.log('Has more results:', hasMoreResults);
+      console.log(
+        'Total lines:',
+        totalMatchLines,
+        'Total files:',
+        searchResults.results.length,
+      );
+
+      return {
+        displayedResults: displayed,
+        hasMore: hasMoreResults,
+        totalLines: totalMatchLines,
+        totalFiles: searchResults.results.length,
+        displayedLines: lineCount,
+      };
+    }, [searchResults, displayLimit]);
 
   // Load more results
   const handleLoadMore = useCallback(() => {
@@ -611,17 +668,17 @@ export const SearchSection: React.FC = () => {
           <ResultsSummary>
             <SearchIcon sx={{ color: 'primary.main' }} />
             <Typography variant="body2" fontWeight="medium">
-              {searchResults.totalMatches} result
-              {searchResults.totalMatches !== 1 ? 's' : ''} found in{' '}
-              {searchResults.fileCount} file
+              {totalLines} result
+              {totalLines !== 1 ? 's' : ''} found in {searchResults.fileCount}{' '}
+              file
               {searchResults.fileCount !== 1 ? 's' : ''}
-              {displayedResults.length < totalFiles && (
+              {hasMore && (
                 <Typography
                   component="span"
                   variant="body2"
                   color="primary.main"
                   sx={{ ml: 1 }}>
-                  (showing {displayedResults.length} of {totalFiles} files)
+                  (showing first {displayedLines} of {totalLines} lines)
                 </Typography>
               )}
               {searchResults.filesSearched && (
@@ -704,9 +761,11 @@ export const SearchSection: React.FC = () => {
                     Loading...
                   </>
                 ) : (
-                  `Load more (${
-                    totalFiles - displayedResults.length
-                  } remaining)`
+                  `Load ${
+                    totalLines - displayedLines > 100
+                      ? displayLimit
+                      : totalLines - displayedLines
+                  } more lines (${totalLines - displayedLines} remaining)`
                 )}
               </LoadMoreButton>
             </LoadMoreContainer>
