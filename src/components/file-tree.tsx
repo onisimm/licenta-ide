@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  TextField,
 } from '@mui/material';
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
@@ -21,6 +22,7 @@ import {
   openFileInTab,
   setLastClickedItem,
   removeTreeItem,
+  renameTreeItem,
 } from '../shared/rdx-slice';
 import { getErrorMessage, logError, normalizeError } from '../shared/utils';
 
@@ -306,6 +308,17 @@ export const FileTree: React.FC<FileTreeProps> = ({
     type: null,
   });
 
+  // Rename dialog state
+  const [renameDialog, setRenameDialog] = useState<{
+    isOpen: boolean;
+    item: TFolderTree | null;
+    newName: string;
+  }>({
+    isOpen: false,
+    item: null,
+    newName: '',
+  });
+
   // Add error handling for this component
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -498,6 +511,76 @@ export const FileTree: React.FC<FileTreeProps> = ({
     setConfirmDialog({ isOpen: false, item: null, type: null });
   }, []);
 
+  const handleRenameClick = useCallback(() => {
+    if (contextMenu?.item) {
+      setRenameDialog({
+        isOpen: true,
+        item: contextMenu.item,
+        newName: contextMenu.item.name,
+      });
+    }
+    setContextMenu(null);
+  }, [contextMenu]);
+
+  const handleRenameConfirm = useCallback(async () => {
+    if (renameDialog.item && renameDialog.newName.trim()) {
+      const item = renameDialog.item;
+      const newName = renameDialog.newName.trim();
+
+      // Don't rename if name hasn't changed
+      if (newName === item.name) {
+        setRenameDialog({ isOpen: false, item: null, newName: '' });
+        return;
+      }
+
+      try {
+        // Construct new path
+        const parentPath = item.parentPath;
+        const newPath =
+          parentPath.endsWith('/') || parentPath.endsWith('\\')
+            ? parentPath + newName
+            : parentPath + '/' + newName;
+
+        // Call appropriate rename function
+        if (item.isDirectory) {
+          await window.electron.renameFolder(item.path, newPath);
+        } else {
+          await window.electron.renameFile(item.path, newPath);
+        }
+
+        // Update Redux state
+        dispatch(
+          renameTreeItem({
+            oldPath: item.path,
+            newPath: newPath,
+            newName: newName,
+          }),
+        );
+
+        console.log(
+          `${item.isDirectory ? 'Folder' : 'File'} renamed successfully:`,
+          item.path,
+          '->',
+          newPath,
+        );
+      } catch (error) {
+        console.error('Error renaming item:', error);
+        const errorMessage = getErrorMessage(error);
+        alert(
+          `Error renaming ${
+            item.isDirectory ? 'folder' : 'file'
+          }: ${errorMessage}`,
+        );
+      }
+    }
+
+    setRenameDialog({ isOpen: false, item: null, newName: '' });
+  }, [renameDialog, dispatch]);
+
+  const handleRenameCancel = useCallback(() => {
+    setRenameDialog({ isOpen: false, item: null, newName: '' });
+  }, []);
+
   // Close context menu on click elsewhere
   useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -554,6 +637,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
         {contextMenu?.item && !contextMenu.item.isDirectory && (
           <MenuItem onClick={handleOpenFile}>Open File</MenuItem>
         )}
+        <MenuItem onClick={handleRenameClick}>Rename</MenuItem>
         <MenuItem onClick={handleDeleteClick}>Delete</MenuItem>
       </Menu>
 
@@ -578,6 +662,49 @@ export const FileTree: React.FC<FileTreeProps> = ({
             variant="contained"
             color="error">
             Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog
+        open={renameDialog.isOpen}
+        onClose={handleRenameCancel}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>
+          Rename {renameDialog.item?.isDirectory ? 'Folder' : 'File'}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="New name"
+            fullWidth
+            variant="outlined"
+            value={renameDialog.newName}
+            onChange={e =>
+              setRenameDialog(prev => ({ ...prev, newName: e.target.value }))
+            }
+            onKeyPress={e => {
+              if (e.key === 'Enter') {
+                handleRenameConfirm();
+              }
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                handleRenameCancel();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleRenameCancel}>Cancel</Button>
+          <Button
+            onClick={handleRenameConfirm}
+            variant="contained"
+            disabled={!renameDialog.newName.trim()}>
+            Rename
           </Button>
         </DialogActions>
       </Dialog>

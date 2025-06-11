@@ -128,6 +128,29 @@ const renderer = {
     }
   },
 
+  renameFile: async (oldPath: string, newPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('rename-file', oldPath, newPath);
+      return result;
+    } catch (error) {
+      console.error('Error in renameFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  renameFolder: async (oldPath: string, newPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'rename-folder',
+        oldPath,
+        newPath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in renameFolder preload:', error);
+      throw normalizeError(error);
+    }
+  },
+
   // Git operations
   getGitStatus: async (folderPath: string) => {
     try {

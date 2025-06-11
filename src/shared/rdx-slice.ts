@@ -383,6 +383,63 @@ export const mainSlice = createSlice({
         state.folderStructure.tree = removeFromTree(state.folderStructure.tree);
       }
     },
+    renameTreeItem: (
+      state,
+      action: PayloadAction<{
+        oldPath: string;
+        newPath: string;
+        newName: string;
+      }>,
+    ) => {
+      const { oldPath, newPath, newName } = action.payload;
+
+      // Recursive function to rename item and update all its children's paths
+      const renameInTree = (items: TFolderTree[]): TFolderTree[] => {
+        return items.map(item => {
+          if (item.path === oldPath) {
+            // Update the item itself
+            return {
+              ...item,
+              name: newName,
+              path: newPath,
+              children: item.children
+                ? updateChildrenPaths(item.children, oldPath, newPath)
+                : undefined,
+            };
+          }
+          if (item.children) {
+            return {
+              ...item,
+              children: renameInTree(item.children),
+            };
+          }
+          return item;
+        });
+      };
+
+      // Helper function to update all children paths when a parent is renamed
+      const updateChildrenPaths = (
+        children: TFolderTree[],
+        oldParentPath: string,
+        newParentPath: string,
+      ): TFolderTree[] => {
+        return children.map(child => {
+          const newChildPath = child.path.replace(oldParentPath, newParentPath);
+          return {
+            ...child,
+            path: newChildPath,
+            parentPath: newParentPath,
+            children: child.children
+              ? updateChildrenPaths(child.children, child.path, newChildPath)
+              : undefined,
+          };
+        });
+      };
+
+      if (state.folderStructure.tree) {
+        state.folderStructure.tree = renameInTree(state.folderStructure.tree);
+      }
+    },
     // App state actions
     setAppTitle: (state, action: PayloadAction<string>) => {
       state.appState.title = action.payload;
@@ -418,6 +475,7 @@ export const {
   addTreeItem,
   collapseAllFolders,
   removeTreeItem,
+  renameTreeItem,
   setAppTitle,
 } = mainSlice.actions;
 

@@ -1086,6 +1086,108 @@ ipcMain.handle('delete-folder', async (event, folderPath: string) => {
   }
 });
 
+// IPC handler for renaming file
+ipcMain.handle(
+  'rename-file',
+  async (event, oldPath: string, newPath: string) => {
+    try {
+      console.log('✏️ Renaming file:', oldPath, '->', newPath);
+
+      // Validate input
+      if (!oldPath || typeof oldPath !== 'string') {
+        throw new Error('Invalid old file path provided');
+      }
+      if (!newPath || typeof newPath !== 'string') {
+        throw new Error('Invalid new file path provided');
+      }
+
+      // Check if old file exists
+      if (!fs.existsSync(oldPath)) {
+        throw new Error('File does not exist');
+      }
+
+      // Check if new path already exists
+      if (fs.existsSync(newPath)) {
+        throw new Error('A file or folder with that name already exists');
+      }
+
+      // Verify old path is a file, not a directory
+      const stats = await fs.promises.stat(oldPath);
+      if (!stats.isFile()) {
+        throw new Error('Path is not a file');
+      }
+
+      // Rename the file
+      await fs.promises.rename(oldPath, newPath);
+
+      console.log('✅ File renamed successfully:', oldPath, '->', newPath);
+      return { success: true, oldPath, newPath };
+    } catch (error) {
+      console.error('❌ Error renaming file:', oldPath, error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+          ? error
+          : 'Unknown error renaming file';
+
+      throw new Error(`Failed to rename file: ${errorMessage}`);
+    }
+  },
+);
+
+// IPC handler for renaming folder
+ipcMain.handle(
+  'rename-folder',
+  async (event, oldPath: string, newPath: string) => {
+    try {
+      console.log('✏️ Renaming folder:', oldPath, '->', newPath);
+
+      // Validate input
+      if (!oldPath || typeof oldPath !== 'string') {
+        throw new Error('Invalid old folder path provided');
+      }
+      if (!newPath || typeof newPath !== 'string') {
+        throw new Error('Invalid new folder path provided');
+      }
+
+      // Check if old folder exists
+      if (!fs.existsSync(oldPath)) {
+        throw new Error('Folder does not exist');
+      }
+
+      // Check if new path already exists
+      if (fs.existsSync(newPath)) {
+        throw new Error('A file or folder with that name already exists');
+      }
+
+      // Verify old path is a directory, not a file
+      const stats = await fs.promises.stat(oldPath);
+      if (!stats.isDirectory()) {
+        throw new Error('Path is not a directory');
+      }
+
+      // Rename the folder
+      await fs.promises.rename(oldPath, newPath);
+
+      console.log('✅ Folder renamed successfully:', oldPath, '->', newPath);
+      return { success: true, oldPath, newPath };
+    } catch (error) {
+      console.error('❌ Error renaming folder:', oldPath, error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+          ? error
+          : 'Unknown error renaming folder';
+
+      throw new Error(`Failed to rename folder: ${errorMessage}`);
+    }
+  },
+);
+
 // New IPC handler for searching files in folder
 ipcMain.handle(
   'search-in-folder',
@@ -2293,6 +2395,3 @@ process.on('uncaughtException', error => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection in Main Process:', reason);
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
