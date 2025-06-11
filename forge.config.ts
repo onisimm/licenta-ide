@@ -14,6 +14,11 @@ import { rendererConfig } from './webpack.renderer.config';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: './assets/icons/SEditor', // Base name for icon files (without extension)
+    // Platform-specific icon configuration
+    win32metadata: {
+      'requested-execution-level': 'asInvoker',
+    },
   },
   rebuildConfig: {},
   makers: [
