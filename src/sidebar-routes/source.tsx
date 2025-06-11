@@ -6,7 +6,6 @@ import {
   IconButton,
   Chip,
   TextField,
-  Divider,
   Collapse,
   styled,
   alpha,
@@ -33,6 +32,7 @@ import {
   Undo as UndoIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '../shared/hooks';
+import { DefaultButton } from '../components/buttons';
 
 // Types for Git status
 interface GitFileStatus {
@@ -490,7 +490,7 @@ export const SourceSection = memo(() => {
             Initialize Git or open a Git repository to see version control
             features
           </Typography>
-          <Button
+          {/* <Button
             variant="outlined"
             size="small"
             onClick={() => {
@@ -498,7 +498,7 @@ export const SourceSection = memo(() => {
               console.log('Initialize Git repository');
             }}>
             Initialize Repository
-          </Button>
+          </Button> */}
         </EmptyState>
       </SourceContainer>
     );
@@ -721,15 +721,20 @@ export const SourceSection = memo(() => {
             multiline
             rows={2}
           />
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<CommitIcon />}
+          <DefaultButton
             onClick={handleCommit}
             disabled={!commitMessage.trim()}
-            fullWidth>
+            sx={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1,
+              padding: 0.5,
+            }}>
+            <CommitIcon />
             Commit
-          </Button>
+          </DefaultButton>
         </CommitSection>
       )}
 

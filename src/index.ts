@@ -1308,63 +1308,56 @@ const parseGitStatus = (output: string): GitFileStatus[] => {
       continue;
     }
 
-    // Parse file status
-    let status: GitFileStatus['status'] = 'modified';
-    let staged = false;
-
-    // Check staged changes first (first character)
-    if (stagedChar !== ' ' && stagedChar !== '?') {
-      staged = true;
-      switch (stagedChar) {
+    // Helper function to get status from character
+    const getStatusFromChar = (char: string): GitFileStatus['status'] => {
+      switch (char) {
         case 'A':
-          status = 'added';
-          break;
+          return 'added';
         case 'M':
-          status = 'modified';
-          break;
+          return 'modified';
         case 'D':
-          status = 'deleted';
-          break;
+          return 'deleted';
         case 'R':
-          status = 'renamed';
-          break;
+          return 'renamed';
         case 'C':
-          status = 'renamed'; // Copied, treat as renamed
-          break;
-        default:
-          status = 'modified';
-          console.log('⚠️ Unknown staged status character:', stagedChar);
-      }
-    }
-    // Check unstaged changes (second character)
-    else if (unstagedChar !== ' ') {
-      staged = false;
-      switch (unstagedChar) {
-        case 'M':
-          status = 'modified';
-          break;
-        case 'D':
-          status = 'deleted';
-          break;
+          return 'renamed'; // Copied, treat as renamed
         case '?':
-          status = 'untracked';
-          break;
+          return 'untracked';
         case '!':
-          status = 'untracked'; // Ignored, treat as untracked
-          break;
+          return 'untracked'; // Ignored, treat as untracked
         default:
-          status = 'modified';
-          console.log('⚠️ Unknown unstaged status character:', unstagedChar);
+          return 'modified';
       }
+    };
+
+    // Check for staged changes (first character)
+    if (stagedChar !== ' ' && stagedChar !== '?') {
+      const stagedStatus = getStatusFromChar(stagedChar);
+      const stagedFileStatus: GitFileStatus = {
+        path: filePath,
+        status: stagedStatus,
+        staged: true,
+      };
+      files.push(stagedFileStatus);
+      console.log('✅ Added staged file to status:', stagedFileStatus);
     }
 
-    const fileStatus: GitFileStatus = { path: filePath, status, staged };
-    files.push(fileStatus);
-
-    console.log('✅ Added file to status:', fileStatus);
+    // Check for unstaged changes (second character)
+    if (unstagedChar !== ' ') {
+      const unstagedStatus = getStatusFromChar(unstagedChar);
+      const unstagedFileStatus: GitFileStatus = {
+        path: filePath,
+        status: unstagedStatus,
+        staged: false,
+      };
+      files.push(unstagedFileStatus);
+      console.log('✅ Added unstaged file to status:', unstagedFileStatus);
+    }
   }
 
-  console.log(`📊 Git status parsing complete: ${files.length} files found`);
+  console.log(
+    `📊 Git status parsing complete: ${files.length} file entries found`,
+  );
   return files;
 };
 
