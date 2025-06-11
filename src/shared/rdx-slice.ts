@@ -363,6 +363,26 @@ export const mainSlice = createSlice({
       // Set timestamp to notify FileTree component
       state.sidebarState.collapseTimestamp = Date.now();
     },
+    removeTreeItem: (state, action: PayloadAction<string>) => {
+      const itemPath = action.payload;
+
+      // Recursive function to remove item from tree
+      const removeFromTree = (items: TFolderTree[]): TFolderTree[] => {
+        return items.filter(item => {
+          if (item.path === itemPath) {
+            return false; // Remove this item
+          }
+          if (item.children) {
+            item.children = removeFromTree(item.children);
+          }
+          return true; // Keep this item
+        });
+      };
+
+      if (state.folderStructure.tree) {
+        state.folderStructure.tree = removeFromTree(state.folderStructure.tree);
+      }
+    },
     // App state actions
     setAppTitle: (state, action: PayloadAction<string>) => {
       state.appState.title = action.payload;
@@ -397,6 +417,7 @@ export const {
   setLastClickedItem,
   addTreeItem,
   collapseAllFolders,
+  removeTreeItem,
   setAppTitle,
 } = mainSlice.actions;
 

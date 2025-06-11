@@ -109,6 +109,25 @@ const renderer = {
     }
   },
 
+  deleteFile: async (filePath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('delete-file', filePath);
+      return result;
+    } catch (error) {
+      console.error('Error in deleteFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  deleteFolder: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('delete-folder', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in deleteFolder preload:', error);
+      throw normalizeError(error);
+    }
+  },
+
   // Git operations
   getGitStatus: async (folderPath: string) => {
     try {

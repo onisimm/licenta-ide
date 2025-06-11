@@ -1006,6 +1006,86 @@ ipcMain.handle('refresh-folder', async () => {
   }
 });
 
+// IPC handler for deleting file
+ipcMain.handle('delete-file', async (event, filePath: string) => {
+  try {
+    console.log('🗑️ Deleting file:', filePath);
+
+    // Validate input
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid file path provided');
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new Error('File does not exist');
+    }
+
+    // Verify it's a file, not a directory
+    const stats = await fs.promises.stat(filePath);
+    if (!stats.isFile()) {
+      throw new Error('Path is not a file');
+    }
+
+    // Delete the file
+    await fs.promises.unlink(filePath);
+
+    console.log('✅ File deleted successfully:', filePath);
+    return { success: true, path: filePath };
+  } catch (error) {
+    console.error('❌ Error deleting file:', filePath, error);
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error deleting file';
+
+    throw new Error(`Failed to delete file: ${errorMessage}`);
+  }
+});
+
+// IPC handler for deleting folder
+ipcMain.handle('delete-folder', async (event, folderPath: string) => {
+  try {
+    console.log('🗑️ Deleting folder:', folderPath);
+
+    // Validate input
+    if (!folderPath || typeof folderPath !== 'string') {
+      throw new Error('Invalid folder path provided');
+    }
+
+    // Check if folder exists
+    if (!fs.existsSync(folderPath)) {
+      throw new Error('Folder does not exist');
+    }
+
+    // Verify it's a directory, not a file
+    const stats = await fs.promises.stat(folderPath);
+    if (!stats.isDirectory()) {
+      throw new Error('Path is not a directory');
+    }
+
+    // Delete the folder and all its contents recursively
+    await fs.promises.rm(folderPath, { recursive: true, force: true });
+
+    console.log('✅ Folder deleted successfully:', folderPath);
+    return { success: true, path: folderPath };
+  } catch (error) {
+    console.error('❌ Error deleting folder:', folderPath, error);
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error deleting folder';
+
+    throw new Error(`Failed to delete folder: ${errorMessage}`);
+  }
+});
+
 // New IPC handler for searching files in folder
 ipcMain.handle(
   'search-in-folder',

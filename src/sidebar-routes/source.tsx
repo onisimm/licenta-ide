@@ -264,6 +264,13 @@ export const SourceSection = memo(() => {
     open: false,
     filePath: '',
   });
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    filePath: string;
+  }>({
+    open: false,
+    filePath: '',
+  });
   const [pullDialog, setPullDialog] = useState<{
     open: boolean;
     errorInfo: any;
@@ -415,6 +422,26 @@ export const SourceSection = memo(() => {
     });
   }, []);
 
+  // Handle delete file confirmation for untracked files
+  const handleDeleteFileClick = useCallback((filePath: string) => {
+    setDeleteDialog({
+      open: true,
+      filePath,
+    });
+  }, []);
+
+  // Handle discard action - either restore or delete based on file status
+  const handleDiscardClick = useCallback(
+    (file: GitFileStatus) => {
+      if (file.status === 'untracked') {
+        handleDeleteFileClick(file.path);
+      } else {
+        handleRestoreFileClick(file.path);
+      }
+    },
+    [handleDeleteFileClick, handleRestoreFileClick],
+  );
+
   // Handle restore file confirmation
   const handleRestoreFileConfirm = useCallback(async () => {
     if (!folderPath || !restoreDialog.filePath) return;
@@ -431,6 +458,30 @@ export const SourceSection = memo(() => {
   // Handle restore dialog close
   const handleRestoreDialogClose = useCallback(() => {
     setRestoreDialog({ open: false, filePath: '' });
+  }, []);
+
+  // Handle delete file confirmation
+  const handleDeleteFileConfirm = useCallback(async () => {
+    if (!folderPath || !deleteDialog.filePath) return;
+
+    try {
+      // Construct full path - Git status gives relative paths
+      const fullPath =
+        folderPath.endsWith('/') || folderPath.endsWith('\\')
+          ? folderPath + deleteDialog.filePath
+          : folderPath + '/' + deleteDialog.filePath;
+
+      await window.electron.deleteFile(fullPath);
+      await loadGitStatus();
+      setDeleteDialog({ open: false, filePath: '' });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  }, [folderPath, deleteDialog.filePath, loadGitStatus]);
+
+  // Handle delete dialog close
+  const handleDeleteDialogClose = useCallback(() => {
+    setDeleteDialog({ open: false, filePath: '' });
   }, []);
 
   // Handle pull dialog close
@@ -632,16 +683,19 @@ export const SourceSection = memo(() => {
                       <AddIcon sx={{ fontSize: 14 }} />
                     </SuccessIconButton>
                   </SourceTooltip>
-                  {/* Only show restore for modified files (not new/untracked files) */}
-                  {file.status !== 'untracked' && file.status !== 'added' && (
-                    <SourceTooltip title={`Discard changes to "${file.path}"`}>
-                      <WarningIconButton
-                        size="small"
-                        onClick={() => handleRestoreFileClick(file.path)}>
-                        <UndoIcon sx={{ fontSize: 14 }} />
-                      </WarningIconButton>
-                    </SourceTooltip>
-                  )}
+                  {/* Show discard button for all files */}
+                  <SourceTooltip
+                    title={
+                      file.status === 'untracked'
+                        ? `Delete and discard changes to "${file.path}"`
+                        : `Discard changes to "${file.path}"`
+                    }>
+                    <WarningIconButton
+                      size="small"
+                      onClick={() => handleDiscardClick(file)}>
+                      <UndoIcon sx={{ fontSize: 14 }} />
+                    </WarningIconButton>
+                  </SourceTooltip>
                 </FileItem>
               ))}
             </Box>
@@ -765,6 +819,37 @@ export const SourceSection = memo(() => {
             variant="contained"
             startIcon={<UndoIcon />}>
             Discard Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete File Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={handleDeleteDialogClose}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description">
+        <DialogTitle id="delete-dialog-title">Delete File?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete{' '}
+            <strong>{deleteDialog.filePath}</strong>?
+            <br />
+            <br />
+            This will permanently delete the file from your file system. This
+            action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteFileConfirm}
+            color="error"
+            variant="contained"
+            startIcon={<UndoIcon />}>
+            Delete File
           </Button>
         </DialogActions>
       </Dialog>

@@ -5,6 +5,13 @@ import {
   Typography,
   CircularProgress,
   Tooltip,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
@@ -13,6 +20,7 @@ import {
   setLoadingFile,
   openFileInTab,
   setLastClickedItem,
+  removeTreeItem,
 } from '../shared/rdx-slice';
 import { getErrorMessage, logError, normalizeError } from '../shared/utils';
 
@@ -201,6 +209,20 @@ const FileItem: React.FC<FileItemProps> = ({
     [item, handleToggle, onFileClick, dispatch],
   );
 
+  const handleRightClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Dispatch custom event to parent component
+      const contextMenuEvent = new CustomEvent('fileItemContextMenu', {
+        detail: { event: e, item },
+      });
+      document.dispatchEvent(contextMenuEvent);
+    },
+    [item],
+  );
+
   // Determine if this directory has children or could have children
   const hasChildren = item.children && item.children.length > 0;
   const couldHaveChildren =
@@ -217,6 +239,7 @@ const FileItem: React.FC<FileItemProps> = ({
           level={level}
           isHovered={isHovered}
           onClick={handleClick}
+          onContextMenu={handleRightClick}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}>
           <ExpandIcon
@@ -264,6 +287,24 @@ export const FileTree: React.FC<FileTreeProps> = ({
   const collapseTimestamp = useAppSelector(
     state => state.main.sidebarState.collapseTimestamp,
   );
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+    item: TFolderTree | null;
+  } | null>(null);
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    item: TFolderTree | null;
+    type: 'delete' | null;
+  }>({
+    isOpen: false,
+    item: null,
+    type: null,
+  });
 
   // Add error handling for this component
   useEffect(() => {
@@ -379,6 +420,109 @@ export const FileTree: React.FC<FileTreeProps> = ({
     [dispatch],
   );
 
+  // Context menu handlers
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent, item: TFolderTree) => {
+      event.preventDefault();
+      setContextMenu({
+        mouseX: event.clientX - 2,
+        mouseY: event.clientY - 4,
+        item,
+      });
+    },
+    [],
+  );
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handleOpenFile = useCallback(() => {
+    if (contextMenu?.item && !contextMenu.item.isDirectory) {
+      handleFileClick(contextMenu.item);
+    }
+    setContextMenu(null);
+  }, [contextMenu, handleFileClick]);
+
+  const handleDeleteItem = useCallback(
+    async (item: TFolderTree) => {
+      try {
+        if (item.isDirectory) {
+          await window.electron.deleteFolder(item.path);
+          console.log('Folder deleted successfully:', item.path);
+        } else {
+          await window.electron.deleteFile(item.path);
+          console.log('File deleted successfully:', item.path);
+        }
+
+        // Remove from Redux state
+        dispatch(removeTreeItem(item.path));
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        const errorMessage = getErrorMessage(error);
+        alert(
+          `Error deleting ${
+            item.isDirectory ? 'folder' : 'file'
+          }: ${errorMessage}`,
+        );
+      }
+    },
+    [dispatch],
+  );
+
+  const handleDeleteClick = useCallback(() => {
+    if (contextMenu?.item) {
+      if (contextMenu.item.isDirectory) {
+        // Show confirmation dialog for folders
+        setConfirmDialog({
+          isOpen: true,
+          item: contextMenu.item,
+          type: 'delete',
+        });
+      } else {
+        // Delete file directly
+        handleDeleteItem(contextMenu.item);
+      }
+    }
+    setContextMenu(null);
+  }, [contextMenu, handleDeleteItem]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (confirmDialog.item) {
+      handleDeleteItem(confirmDialog.item);
+    }
+    setConfirmDialog({ isOpen: false, item: null, type: null });
+  }, [confirmDialog, handleDeleteItem]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setConfirmDialog({ isOpen: false, item: null, type: null });
+  }, []);
+
+  // Close context menu on click elsewhere
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  // Listen for file item context menu events
+  useEffect(() => {
+    const handleFileItemContextMenu = (event: CustomEvent) => {
+      const { event: mouseEvent, item } = event.detail;
+      handleContextMenu(mouseEvent, item);
+    };
+
+    document.addEventListener(
+      'fileItemContextMenu',
+      handleFileItemContextMenu as EventListener,
+    );
+    return () =>
+      document.removeEventListener(
+        'fileItemContextMenu',
+        handleFileItemContextMenu as EventListener,
+      );
+  }, [handleContextMenu]);
+
   if (!treeItems || treeItems.length === 0) {
     return <EmptyState>No files found in the selected directory.</EmptyState>;
   }
@@ -396,6 +540,47 @@ export const FileTree: React.FC<FileTreeProps> = ({
           onUpdateItem={handleUpdateItem}
         />
       ))}
+
+      {/* Context Menu */}
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }>
+        {contextMenu?.item && !contextMenu.item.isDirectory && (
+          <MenuItem onClick={handleOpenFile}>Open File</MenuItem>
+        )}
+        <MenuItem onClick={handleDeleteClick}>Delete</MenuItem>
+      </Menu>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.isOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>Delete Folder</DialogTitle>
+        <DialogContent>
+          <Typography>
+            This is a folder and may contain files / subdirectories. This action
+            will delete the folder and all its content. Are you sure you want to
+            continue?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>No</Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error">
+            Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </TreeContainer>
   );
 };
