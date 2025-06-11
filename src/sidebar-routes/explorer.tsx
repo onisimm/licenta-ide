@@ -235,7 +235,7 @@ export const ExplorerSection = memo(() => {
   }, [dispatch]);
 
   useEffect(() => {
-    const unsubscribeOpen = window.electron.onMenuOpenFile?.(openFolder);
+    const unsubscribeOpen = window.electron?.onMenuOpenFile?.(openFolder);
 
     return () => {
       unsubscribeOpen?.();

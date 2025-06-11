@@ -1,5 +1,5 @@
 {
-  "name": "licenta-ide",
+  "name": "SEditor",
   "version": "1.0.0",
   "description": "Idea: **_Code Editor with Electron and TypeScript_**",
   "main": ".webpack/main",

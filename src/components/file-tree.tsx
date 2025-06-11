@@ -199,39 +199,40 @@ const FileItem: React.FC<FileItemProps> = ({
 
   return (
     <>
-      <TreeItem
-        level={level}
-        isHovered={isHovered}
-        onClick={handleClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}>
-        <ExpandIcon
-          isExpanded={isExpanded}
-          isDirectory={couldHaveChildren}
-          hasPreloadedChildren={item.childrenLoaded && hasChildren}
-          isGitIgnored={item.isGitIgnored}
-          onClick={e => {
-            e.stopPropagation();
-            if (item.isDirectory) {
-              handleToggle();
-            }
-          }}
-        />
-        <FileIcon isGitIgnored={item.isGitIgnored}>
-          {getFileIcon(item.name, item.isDirectory, isExpanded)}
-        </FileIcon>
-        <Tooltip
-          title={item.isGitIgnored ? 'This file is ignored by git' : ''}
-          placement="top"
-          disableHoverListener={!item.isGitIgnored}>
+      <Tooltip
+        title={item.isGitIgnored ? 'This file is ignored by git' : ''}
+        placement="top"
+        disableHoverListener={!item.isGitIgnored}
+        disableInteractive>
+        <TreeItem
+          level={level}
+          isHovered={isHovered}
+          onClick={handleClick}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}>
+          <ExpandIcon
+            isExpanded={isExpanded}
+            isDirectory={couldHaveChildren}
+            hasPreloadedChildren={item.childrenLoaded && hasChildren}
+            isGitIgnored={item.isGitIgnored}
+            onClick={e => {
+              e.stopPropagation();
+              if (item.isDirectory) {
+                handleToggle();
+              }
+            }}
+          />
+          <FileIcon isGitIgnored={item.isGitIgnored}>
+            {getFileIcon(item.name, item.isDirectory, isExpanded)}
+          </FileIcon>
           <FileName
             isDirectory={item.isDirectory}
             isGitIgnored={item.isGitIgnored}>
             {item.name}
           </FileName>
-        </Tooltip>
-        {item.isLoading && <LoadingSpinner size={12} thickness={4} />}
-      </TreeItem>
+          {item.isLoading && <LoadingSpinner size={12} thickness={4} />}
+        </TreeItem>
+      </Tooltip>
 
       {item.isDirectory && isExpanded && hasChildren && (
         <FileTree

@@ -1,4 +1,4 @@
-# licenta-ide
+# SEditor
 
 ## Overview
 
@@ -35,7 +35,7 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/onisimm/licenta-ide
+   git clone https://github.com/onisimm/SEditor
    ```
 
 ### Running the project
