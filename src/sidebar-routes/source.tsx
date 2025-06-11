@@ -239,6 +239,13 @@ export const SourceSection = memo(() => {
     open: false,
     filePath: '',
   });
+  const [pullDialog, setPullDialog] = useState<{
+    open: boolean;
+    errorInfo: any;
+  }>({
+    open: false,
+    errorInfo: null,
+  });
 
   // Get folder info from Redux
   const folderStructure = useAppSelector(state => state.main.folderStructure);
@@ -348,8 +355,20 @@ export const SourceSection = memo(() => {
     if (!folderPath) return;
 
     try {
-      await window.electron.gitPull(folderPath);
-      await loadGitStatus();
+      const result = await window.electron.gitPull(folderPath);
+
+      if (result.success) {
+        await loadGitStatus();
+      } else if (result.error?.type === 'divergent_branches') {
+        // Show divergent branches dialog
+        setPullDialog({
+          open: true,
+          errorInfo: result.error,
+        });
+      } else {
+        // Handle other errors
+        console.error('Pull failed:', result.error?.message || 'Unknown error');
+      }
     } catch (error) {
       console.error('Error pulling changes:', error);
     }
@@ -388,6 +407,44 @@ export const SourceSection = memo(() => {
   const handleRestoreDialogClose = useCallback(() => {
     setRestoreDialog({ open: false, filePath: '' });
   }, []);
+
+  // Handle pull dialog close
+  const handlePullDialogClose = useCallback(() => {
+    setPullDialog({ open: false, errorInfo: null });
+  }, []);
+
+  // Handle pull strategy selection
+  const handlePullStrategy = useCallback(
+    async (strategy: string) => {
+      if (!folderPath) return;
+
+      try {
+        let result;
+        switch (strategy) {
+          case 'merge':
+            result = await window.electron.gitPullMerge(folderPath);
+            break;
+          case 'rebase':
+            result = await window.electron.gitPullRebase(folderPath);
+            break;
+          case 'reset':
+            result = await window.electron.gitResetToRemote(folderPath);
+            break;
+          default:
+            console.error('Unknown pull strategy:', strategy);
+            return;
+        }
+
+        if (result.success) {
+          await loadGitStatus();
+          setPullDialog({ open: false, errorInfo: null });
+        }
+      } catch (error) {
+        console.error(`Error with ${strategy} strategy:`, error);
+      }
+    },
+    [folderPath, loadGitStatus],
+  );
 
   // No folder opened
   if (!hasFolder) {
@@ -703,6 +760,59 @@ export const SourceSection = memo(() => {
             variant="contained"
             startIcon={<UndoIcon />}>
             Discard Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Pull Strategy Dialog */}
+      <Dialog
+        open={pullDialog.open}
+        onClose={handlePullDialogClose}
+        aria-labelledby="pull-dialog-title"
+        maxWidth="md"
+        fullWidth>
+        <DialogTitle id="pull-dialog-title">
+          Resolve Divergent Branches
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>{pullDialog.errorInfo?.message}</DialogContentText>
+          <DialogContentText sx={{ mt: 1, mb: 2 }}>
+            {pullDialog.errorInfo?.details}
+          </DialogContentText>
+
+          {pullDialog.errorInfo?.options?.map((option: any) => (
+            <Box
+              key={option.id}
+              sx={{
+                mb: 2,
+                p: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
+              onClick={() => handlePullStrategy(option.id)}>
+              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                {option.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {option.description}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontFamily="monospace">
+                {option.command}
+              </Typography>
+            </Box>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handlePullDialogClose} color="primary">
+            Cancel
           </Button>
         </DialogActions>
       </Dialog>

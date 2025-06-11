@@ -1622,6 +1622,7 @@ ipcMain.handle('git-push', async (event, folderPath: string) => {
   }
 });
 
+// Enhanced Git pull handler with divergent branch handling
 ipcMain.handle('git-pull', async (event, folderPath: string) => {
   try {
     console.log('📥 Pulling from remote...');
@@ -1632,8 +1633,119 @@ ipcMain.handle('git-pull', async (event, folderPath: string) => {
 
     console.log('✅ Pull successful');
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error pulling:', error);
+
+    // Check if this is a divergent branches error
+    if (error.stderr && error.stderr.includes('divergent branches')) {
+      const divergentError = {
+        type: 'divergent_branches',
+        message: 'Your local branch and remote branch have diverged',
+        details:
+          'You have local commits that differ from the remote branch. Choose how to reconcile:',
+        options: [
+          {
+            id: 'merge',
+            title: 'Merge (Recommended)',
+            description: 'Create a merge commit combining both histories',
+            command: 'git pull --no-rebase',
+          },
+          {
+            id: 'rebase',
+            title: 'Rebase',
+            description: 'Replay your local commits on top of remote changes',
+            command: 'git pull --rebase',
+          },
+          {
+            id: 'reset',
+            title: 'Reset (Dangerous)',
+            description: 'Discard local commits and match remote exactly',
+            command: 'git reset --hard origin/main',
+          },
+        ],
+        originalError: error.message,
+      };
+
+      console.log(
+        '🔄 Detected divergent branches, returning resolution options',
+      );
+      return { success: false, error: divergentError };
+    }
+
+    // For other errors, return a generic error structure
+    return {
+      success: false,
+      error: {
+        type: 'generic',
+        message: error.message || 'Pull failed',
+        originalError: error.message,
+      },
+    };
+  }
+});
+
+// New handler for pull with merge strategy
+ipcMain.handle('git-pull-merge', async (event, folderPath: string) => {
+  try {
+    console.log('📥 Pulling with merge strategy...');
+
+    await execAsync('git pull --no-rebase', {
+      cwd: folderPath,
+    });
+
+    console.log('✅ Pull with merge successful');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error pulling with merge:', error);
+    throw error;
+  }
+});
+
+// New handler for pull with rebase strategy
+ipcMain.handle('git-pull-rebase', async (event, folderPath: string) => {
+  try {
+    console.log('📥 Pulling with rebase strategy...');
+
+    await execAsync('git pull --rebase', {
+      cwd: folderPath,
+    });
+
+    console.log('✅ Pull with rebase successful');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error pulling with rebase:', error);
+    throw error;
+  }
+});
+
+// New handler for reset to remote (dangerous operation)
+ipcMain.handle('git-reset-to-remote', async (event, folderPath: string) => {
+  try {
+    console.log('⚠️ Resetting to remote (discarding local changes)...');
+
+    // First fetch to ensure we have latest remote info
+    await execAsync('git fetch origin', {
+      cwd: folderPath,
+    });
+
+    // Get current branch name
+    const { stdout: branchOutput } = await execAsync(
+      'git branch --show-current',
+      {
+        cwd: folderPath,
+      },
+    );
+    const currentBranch = branchOutput.trim();
+
+    // Reset to remote branch
+    await execAsync(`git reset --hard origin/${currentBranch}`, {
+      cwd: folderPath,
+    });
+
+    console.log('✅ Reset to remote successful');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error resetting to remote:', error);
     throw error;
   }
 });

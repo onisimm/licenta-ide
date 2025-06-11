@@ -173,6 +173,36 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  gitPullMerge: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-pull-merge', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitPullMerge preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitPullRebase: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-pull-rebase', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitPullRebase preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitResetToRemote: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-reset-to-remote',
+        folderPath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitResetToRemote preload:', error);
+      throw normalizeError(error);
+    }
+  },
   gitRestoreFile: async (folderPath: string, filePath: string) => {
     try {
       const result = await ipcRenderer.invoke(
