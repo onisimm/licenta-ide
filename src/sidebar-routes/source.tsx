@@ -186,6 +186,31 @@ const LoadingContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
 }));
 
+// Custom Tooltip component with default props
+const SourceTooltip: React.FC<React.ComponentProps<typeof Tooltip>> = props => {
+  return <Tooltip arrow disableInteractive {...props} />;
+};
+
+// Styled IconButton for success actions (staging, refresh, etc.)
+const SuccessIconButton = styled(IconButton)(({ theme }) => ({
+  padding: theme.spacing(0.25),
+  color: theme.palette.text.secondary,
+  '&:hover': {
+    color: theme.palette.success.main,
+    backgroundColor: alpha(theme.palette.success.main, 0.1),
+  },
+}));
+
+// Styled IconButton for warning actions (unstaging, destructive operations)
+const WarningIconButton = styled(IconButton)(({ theme }) => ({
+  padding: theme.spacing(0.25),
+  color: theme.palette.text.secondary,
+  '&:hover': {
+    color: theme.palette.warning.main,
+    backgroundColor: alpha(theme.palette.warning.main, 0.1),
+  },
+}));
+
 // Status color mapping
 const getStatusColor = (status: string, staged: boolean) => {
   if (staged) return 'success';
@@ -534,11 +559,11 @@ export const SourceSection = memo(() => {
             />
           )}
           <Box sx={{ flex: 1 }} />
-          <Tooltip title="Refresh">
-            <IconButton size="small" onClick={loadGitStatus}>
+          <SourceTooltip title="Refresh">
+            <SuccessIconButton size="small" onClick={loadGitStatus}>
               <RefreshIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
+            </SuccessIconButton>
+          </SourceTooltip>
         </BranchInfo>
       )}
 
@@ -579,34 +604,16 @@ export const SourceSection = memo(() => {
                 )}
                 Changes ({unstagedFiles.length})
               </SectionTitle>
-              <Tooltip title="Stage all changes">
-                <IconButton size="small" onClick={handleStageAll}>
+              <SourceTooltip title="Stage all changes">
+                <SuccessIconButton size="small" onClick={handleStageAll}>
                   <AddIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
+                </SuccessIconButton>
+              </SourceTooltip>
             </SectionHeader>
             <Collapse in={expandedSections.changes}>
               <Box>
                 {unstagedFiles.map(file => (
                   <FileItem key={file.path}>
-                    <Tooltip title={`Stage "${file.path}"`}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleStageFile(file.path, false)}
-                        sx={theme => ({
-                          padding: 0.25,
-                          color: theme.palette.text.secondary,
-                          '&:hover': {
-                            color: theme.palette.success.main,
-                            backgroundColor: alpha(
-                              theme.palette.success.main,
-                              0.1,
-                            ),
-                          },
-                        })}>
-                        <AddIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    </Tooltip>
                     <StatusChip
                       label={getStatusIcon(file.status)}
                       size="small"
@@ -614,26 +621,23 @@ export const SourceSection = memo(() => {
                       variant="outlined"
                     />
                     <FileName>{file.path}</FileName>
+                    <SourceTooltip title={`Stage "${file.path}"`}>
+                      <SuccessIconButton
+                        size="small"
+                        onClick={() => handleStageFile(file.path, false)}>
+                        <AddIcon sx={{ fontSize: 14 }} />
+                      </SuccessIconButton>
+                    </SourceTooltip>
                     {/* Only show restore for modified files (not new/untracked files) */}
                     {file.status !== 'untracked' && file.status !== 'added' && (
-                      <Tooltip title={`Discard changes to "${file.path}"`}>
-                        <IconButton
+                      <SourceTooltip
+                        title={`Discard changes to "${file.path}"`}>
+                        <WarningIconButton
                           size="small"
-                          onClick={() => handleRestoreFileClick(file.path)}
-                          sx={theme => ({
-                            padding: 0.25,
-                            color: theme.palette.text.secondary,
-                            '&:hover': {
-                              color: theme.palette.warning.main,
-                              backgroundColor: alpha(
-                                theme.palette.warning.main,
-                                0.1,
-                              ),
-                            },
-                          })}>
+                          onClick={() => handleRestoreFileClick(file.path)}>
                           <UndoIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </Tooltip>
+                        </WarningIconButton>
+                      </SourceTooltip>
                     )}
                   </FileItem>
                 ))}
@@ -654,40 +658,29 @@ export const SourceSection = memo(() => {
                 )}
                 Staged Changes ({stagedFiles.length})
               </SectionTitle>
-              <Tooltip title="Unstage all changes">
-                <IconButton size="small" onClick={handleUnstageAll}>
+              <SourceTooltip title="Unstage all changes">
+                <WarningIconButton size="small" onClick={handleUnstageAll}>
                   <RemoveIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
+                </WarningIconButton>
+              </SourceTooltip>
             </SectionHeader>
             <Collapse in={expandedSections.staged}>
               <Box>
                 {stagedFiles.map(file => (
                   <FileItem key={file.path}>
-                    <Tooltip title={`Unstage "${file.path}"`}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleStageFile(file.path, true)}
-                        sx={theme => ({
-                          padding: 0.25,
-                          color: theme.palette.success.main,
-                          '&:hover': {
-                            color: theme.palette.text.secondary,
-                            backgroundColor: alpha(
-                              theme.palette.action.hover,
-                              0.5,
-                            ),
-                          },
-                        })}>
-                        <RemoveIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    </Tooltip>
                     <StatusChip
                       label={getStatusIcon(file.status)}
                       size="small"
                       color={getStatusColor(file.status, true)}
                     />
                     <FileName>{file.path}</FileName>
+                    <SourceTooltip title={`Unstage "${file.path}"`}>
+                      <WarningIconButton
+                        size="small"
+                        onClick={() => handleStageFile(file.path, true)}>
+                        <RemoveIcon sx={{ fontSize: 14 }} />
+                      </WarningIconButton>
+                    </SourceTooltip>
                   </FileItem>
                 ))}
               </Box>

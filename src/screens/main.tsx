@@ -68,6 +68,12 @@ const MainComponent = memo(() => {
           setIsQuickFileOpenerOpen(true);
         }
       }
+
+      // Check for Cmd+J (Mac) or Ctrl+J (Windows/Linux) for terminal
+      if ((event.metaKey || event.ctrlKey) && event.key === 'j') {
+        event.preventDefault();
+        handleOpenTerminal();
+      }
     };
 
     // Handle menu events from application menu
@@ -77,20 +83,46 @@ const MainComponent = memo(() => {
       }
     };
 
+    // Handle terminal opening from menu
+    const handleMenuTerminal = () => {
+      handleOpenTerminal();
+    };
+
+    // Terminal opening function
+    const handleOpenTerminal = async () => {
+      try {
+        await window.electron.openTerminal();
+        console.log('Terminal opened successfully');
+      } catch (error) {
+        console.error('Failed to open terminal:', error);
+      }
+    };
+
     // Add global keyboard event listener
     document.addEventListener('keydown', handleKeyDown);
 
-    // Add menu event listener if electron is available
-    let menuCleanup: (() => void) | undefined;
+    // Add menu event listeners if electron is available
+    let menuQuickOpenCleanup: (() => void) | undefined;
+    let menuTerminalCleanup: (() => void) | undefined;
+
     if (window.electron && window.electron.onMenuQuickOpenFile) {
-      menuCleanup = window.electron.onMenuQuickOpenFile(handleMenuQuickOpen);
+      menuQuickOpenCleanup =
+        window.electron.onMenuQuickOpenFile(handleMenuQuickOpen);
+    }
+
+    if (window.electron && window.electron.onMenuOpenTerminal) {
+      menuTerminalCleanup =
+        window.electron.onMenuOpenTerminal(handleMenuTerminal);
     }
 
     // Cleanup
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      if (menuCleanup) {
-        menuCleanup();
+      if (menuQuickOpenCleanup) {
+        menuQuickOpenCleanup();
+      }
+      if (menuTerminalCleanup) {
+        menuTerminalCleanup();
       }
     };
   }, [hasFolder, isQuickFileOpenerOpen]);

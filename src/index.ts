@@ -1770,6 +1770,119 @@ ipcMain.handle(
   },
 );
 
+// Terminal opening handler
+ipcMain.handle('open-terminal', async (event, folderPath?: string) => {
+  try {
+    console.log('🖥️ Opening terminal in:', folderPath || 'current directory');
+
+    // Get the folder path - use provided path or get from store
+    let targetPath = folderPath;
+    if (!targetPath) {
+      // @ts-ignore
+      const folderData = store.get(SELECTED_FOLDER_STORE_NAME);
+      targetPath = folderData?.root || process.cwd();
+    }
+
+    // Ensure the path exists
+    if (!fs.existsSync(targetPath)) {
+      throw new Error(`Directory does not exist: ${targetPath}`);
+    }
+
+    let command: string;
+    let args: string[] = [];
+
+    // Platform-specific terminal opening commands
+    switch (process.platform) {
+      case 'darwin': // macOS
+        command = 'open';
+        args = ['-a', 'Terminal', targetPath];
+        break;
+
+      case 'win32': // Windows
+        command = 'cmd';
+        args = ['/c', 'start', 'cmd', '/k', `cd /d "${targetPath}"`];
+        break;
+
+      case 'linux': // Linux
+        // Try different terminal emulators in order of preference
+        const terminals = [
+          'gnome-terminal',
+          'konsole',
+          'xfce4-terminal',
+          'lxterminal',
+          'xterm',
+        ];
+        let terminalFound = false;
+
+        for (const terminal of terminals) {
+          try {
+            // Check if terminal exists
+            await execAsync(`which ${terminal}`);
+            command = terminal;
+
+            // Different terminals have different arguments for working directory
+            switch (terminal) {
+              case 'gnome-terminal':
+                args = ['--working-directory', targetPath];
+                break;
+              case 'konsole':
+                args = ['--workdir', targetPath];
+                break;
+              case 'xfce4-terminal':
+                args = ['--working-directory', targetPath];
+                break;
+              case 'lxterminal':
+                args = ['--working-directory', targetPath];
+                break;
+              case 'xterm':
+                args = ['-e', `cd "${targetPath}" && bash`];
+                break;
+              default:
+                args = [];
+            }
+
+            terminalFound = true;
+            break;
+          } catch (error) {
+            // Terminal not found, try next one
+            continue;
+          }
+        }
+
+        if (!terminalFound) {
+          throw new Error(
+            'No supported terminal emulator found. Please install gnome-terminal, konsole, xfce4-terminal, lxterminal, or xterm.',
+          );
+        }
+        break;
+
+      default:
+        throw new Error(`Unsupported platform: ${process.platform}`);
+    }
+
+    // Execute the command
+    console.log(`🖥️ Executing: ${command} ${args.join(' ')}`);
+
+    if (process.platform === 'win32') {
+      // For Windows, use spawn with detached option
+      spawn(command, args, {
+        detached: true,
+        stdio: 'ignore',
+        cwd: targetPath,
+      });
+    } else {
+      // For macOS and Linux, use execAsync
+      await execAsync(`${command} ${args.map(arg => `"${arg}"`).join(' ')}`);
+    }
+
+    console.log('✅ Terminal opened successfully');
+    return { success: true, path: targetPath };
+  } catch (error) {
+    console.error('❌ Error opening terminal:', error);
+    throw error;
+  }
+});
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -1889,6 +2002,16 @@ const createMenu = () => {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
+        { type: 'separator' },
+        {
+          label: 'Open Terminal',
+          accelerator: 'CmdOrCtrl+J',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-open-terminal');
+            }
+          },
+        },
       ],
     },
     {

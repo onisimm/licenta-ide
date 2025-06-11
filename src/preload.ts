@@ -217,6 +217,17 @@ const renderer = {
     }
   },
 
+  // Terminal operations
+  openTerminal: async (folderPath?: string) => {
+    try {
+      const result = await ipcRenderer.invoke('open-terminal', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in openTerminal preload:', error);
+      throw normalizeError(error);
+    }
+  },
+
   // Menu event listeners
   onMenuSaveFile: (callback: () => void) => {
     const listener = () => callback();
@@ -242,6 +253,11 @@ const renderer = {
     const listener = () => callback();
     ipcRenderer.on('menu-quick-open-file', listener);
     return () => ipcRenderer.removeListener('menu-quick-open-file', listener);
+  },
+  onMenuOpenTerminal: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu-open-terminal', listener);
+    return () => ipcRenderer.removeListener('menu-open-terminal', listener);
   },
   searchInFolder: async (folderPath: string, searchQuery: string) => {
     try {
