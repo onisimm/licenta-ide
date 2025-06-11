@@ -96,7 +96,7 @@ const ContentSection = memo(() => {
 
   // Menu event listeners
   useEffect(() => {
-    const unsubscribeCloseFolder = window.electron.onMenuCloseFolder?.(() => {
+    const unsubscribeCloseFolder = window.electron?.onMenuCloseFolder?.(() => {
       // Use shared hook without editor content getter (for menu-triggered close)
       closeFolder();
     });

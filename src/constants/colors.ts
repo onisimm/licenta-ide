@@ -138,7 +138,7 @@ export const lightColors: ColorScheme = {
     background: '#f5f5f5',
     text: '#333333',
     icon: '#757575',
-    iconActive: '#212121',
+    iconActive: '#ff82a1',
     border: '#e0e0e0',
   },
   editor: {
@@ -304,7 +304,7 @@ export const oceanColors: ColorScheme = {
     background: '#0f1b2e',
     text: '#b3d9e8',
     icon: '#6b8fa3',
-    iconActive: '#00acc1',
+    iconActive: '#155159',
     border: '#2c4f73',
   },
   editor: {
@@ -387,7 +387,7 @@ export const forestColors: ColorScheme = {
     background: '#0a140a',
     text: '#c8e6c9',
     icon: '#7ba07b',
-    iconActive: '#66bb6a',
+    iconActive: '#315233',
     border: '#2e4b2e',
   },
   editor: {
@@ -553,7 +553,7 @@ export const purpleColors: ColorScheme = {
     background: '#0f0a10',
     text: '#e1bee7',
     icon: '#9c7ba0',
-    iconActive: '#ab47bc',
+    iconActive: '#4b1f53',
     border: '#3d2840',
   },
   editor: {
@@ -636,7 +636,7 @@ export const midnightColors: ColorScheme = {
     background: '#080810',
     text: '#c5cae9',
     icon: '#7986cb',
-    iconActive: '#303f9f',
+    iconActive: '#7888ef',
     border: '#2a2a3d',
   },
   editor: {

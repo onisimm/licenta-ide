@@ -12,7 +12,7 @@ const IconContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: theme.spacing(0.25),
-  alignItems: 'center',
+  width: '100%',
 }));
 
 function IconList({ icons, active, onIconClick }: IconListProps) {

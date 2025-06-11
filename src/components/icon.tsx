@@ -12,27 +12,32 @@ interface IconProps {
 const IconWrapper = styled(Box, {
   shouldForwardProp: prop => prop !== 'active',
 })<{ active: boolean }>(({ theme, active }) => ({
-  padding: theme.spacing(1.25),
   cursor: 'pointer',
-
-  opacity: active ? 1 : 0.6,
-  paddingRight: active ? theme.spacing(1) : theme.spacing(1.25),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  opacity: active ? 1 : 0.4,
+  width: '100%',
+  padding: theme.spacing(1),
+  boxSizing: 'border-box',
+  borderRight: active
+    ? `3px solid ${theme.palette.sidebar.iconActive}`
+    : 'none',
 
   '&:hover': {
     opacity: 1,
   },
 }));
 
-const ActiveHighlight = styled(Box)(({ theme }) => ({
-  width: theme.size(0.25),
-  height: '100%',
-  backgroundColor: theme.palette.sidebar.iconActive,
-  zIndex: 1,
+const StyledLink = styled(Link)(() => ({
+  width: '100%',
+  display: 'block',
+  textDecoration: 'none',
 }));
 
-const IconRow = styled(Box)(({ theme }) => ({
+const IconRow = styled(Box)(() => ({
   display: 'flex',
-  alignItems: 'flex-end',
+  width: '100%',
 }));
 
 export default function Icon({
@@ -54,15 +59,15 @@ export default function Icon({
       leaveDelay={0}
       disableInteractive>
       <IconRow>
-        <Link to={linkHref}>
+        <StyledLink to={linkHref}>
           <IconWrapper
             key={name}
             active={active}
             onClick={() => onClick && onClick(name)}>
             {icon}
           </IconWrapper>
-        </Link>
-        {active && <ActiveHighlight />}
+        </StyledLink>
+        {/* {active && <ActiveHighlight />} */}
       </IconRow>
     </Tooltip>
   );
