@@ -6,7 +6,6 @@ Idea: **_Code Editor with Electron and TypeScript_**
 
 This is a modern **code editor** built using **Electron** and **TypeScript**. Inspired by tools like **VSCode**, it aims to deliver core editor functionalities while being an educational journey into desktop app development. TypeScript ensures type safety and scalability, while Electron provides a powerful framework for cross-platform desktop applications.
 
-
 ---
 
 ## Challenges
