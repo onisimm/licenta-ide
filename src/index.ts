@@ -874,6 +874,84 @@ ipcMain.handle(
   },
 );
 
+// IPC handler for creating new file
+ipcMain.handle(
+  'create-file',
+  async (event, filePath: string, content: string = '') => {
+    try {
+      console.log('📝 Creating new file:', filePath);
+
+      // Validate input
+      if (!filePath || typeof filePath !== 'string') {
+        throw new Error('Invalid file path provided');
+      }
+
+      // Check if file already exists
+      if (fs.existsSync(filePath)) {
+        throw new Error('File already exists');
+      }
+
+      // Ensure directory exists
+      const dirPath = path.dirname(filePath);
+      if (!fs.existsSync(dirPath)) {
+        await fs.promises.mkdir(dirPath, { recursive: true });
+        console.log('📁 Created directory:', dirPath);
+      }
+
+      // Create the file
+      await fs.promises.writeFile(filePath, content, 'utf8');
+
+      console.log('✅ File created successfully:', filePath);
+      return { success: true, path: filePath };
+    } catch (error) {
+      console.error('❌ Error creating file:', filePath, error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+          ? error
+          : 'Unknown error creating file';
+
+      throw new Error(`Failed to create file: ${errorMessage}`);
+    }
+  },
+);
+
+// IPC handler for creating new folder
+ipcMain.handle('create-folder', async (event, folderPath: string) => {
+  try {
+    console.log('📁 Creating new folder:', folderPath);
+
+    // Validate input
+    if (!folderPath || typeof folderPath !== 'string') {
+      throw new Error('Invalid folder path provided');
+    }
+
+    // Check if folder already exists
+    if (fs.existsSync(folderPath)) {
+      throw new Error('Folder already exists');
+    }
+
+    // Create the folder
+    await fs.promises.mkdir(folderPath, { recursive: true });
+
+    console.log('✅ Folder created successfully:', folderPath);
+    return { success: true, path: folderPath };
+  } catch (error) {
+    console.error('❌ Error creating folder:', folderPath, error);
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error creating folder';
+
+    throw new Error(`Failed to create folder: ${errorMessage}`);
+  }
+});
+
 // New IPC handler for searching files in folder
 ipcMain.handle(
   'search-in-folder',

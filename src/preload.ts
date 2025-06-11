@@ -69,12 +69,32 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+
+  // File operations
   saveFile: async (filePath: string, content: string) => {
     try {
       const result = await ipcRenderer.invoke('save-file', filePath, content);
       return result;
     } catch (error) {
       console.error('Error in saveFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  createFile: async (filePath: string, content: string = '') => {
+    try {
+      const result = await ipcRenderer.invoke('create-file', filePath, content);
+      return result;
+    } catch (error) {
+      console.error('Error in createFile preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  createFolder: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('create-folder', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in createFolder preload:', error);
       throw normalizeError(error);
     }
   },

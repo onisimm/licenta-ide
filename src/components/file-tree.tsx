@@ -9,7 +9,11 @@ import {
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
 import { useAppDispatch } from '../shared/hooks';
-import { setLoadingFile, openFileInTab } from '../shared/rdx-slice';
+import {
+  setLoadingFile,
+  openFileInTab,
+  setLastClickedItem,
+} from '../shared/rdx-slice';
 import { getErrorMessage, logError, normalizeError } from '../shared/utils';
 
 interface FileTreeProps {
@@ -147,6 +151,7 @@ const FileItem: React.FC<FileItemProps> = ({
   onUpdateItem,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const dispatch = useAppDispatch();
 
   const handleToggle = useCallback(async () => {
     if (!item.isDirectory) return;
@@ -183,13 +188,17 @@ const FileItem: React.FC<FileItemProps> = ({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+
+      // Always track the last clicked item (for both files and folders)
+      dispatch(setLastClickedItem(item));
+
       if (item.isDirectory) {
         handleToggle();
       } else {
         onFileClick(item);
       }
     },
-    [item, handleToggle, onFileClick],
+    [item, handleToggle, onFileClick, dispatch],
   );
 
   // Determine if this directory has children or could have children

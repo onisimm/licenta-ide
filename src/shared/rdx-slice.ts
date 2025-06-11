@@ -42,6 +42,7 @@ interface SearchState {
 
 interface SidebarState {
   explorerExpanded: boolean; // Root folder expansion state
+  lastClickedItem: TFolderTree | null; // Track last clicked item for context operations
 }
 
 // App state for application-level settings
@@ -73,6 +74,7 @@ const initialState: IMainStateWithPersistence = {
   },
   sidebarState: {
     explorerExpanded: true,
+    lastClickedItem: null,
   },
   appState: {
     title: 'SEditor',
@@ -291,6 +293,73 @@ export const mainSlice = createSlice({
     setExplorerExpanded: (state, action: PayloadAction<boolean>) => {
       state.sidebarState.explorerExpanded = action.payload;
     },
+    setLastClickedItem: (state, action: PayloadAction<TFolderTree | null>) => {
+      state.sidebarState.lastClickedItem = action.payload;
+    },
+    addTreeItem: (
+      state,
+      action: PayloadAction<{ parentPath: string; newItem: TFolderTree }>,
+    ) => {
+      const { parentPath, newItem } = action.payload;
+
+      if (parentPath === state.folderStructure.root) {
+        // Add to root
+        state.folderStructure.tree.push(newItem);
+        // Sort items - directories first, then alphabetically
+        state.folderStructure.tree.sort((a, b) => {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      } else {
+        // Add to specific parent folder
+        const addToParent = (items: TFolderTree[]): TFolderTree[] => {
+          return items.map(item => {
+            if (item.path === parentPath && item.isDirectory) {
+              const updatedChildren = [...(item.children || []), newItem];
+              // Sort children - directories first, then alphabetically
+              updatedChildren.sort((a, b) => {
+                if (a.isDirectory && !b.isDirectory) return -1;
+                if (!a.isDirectory && b.isDirectory) return 1;
+                return a.name.localeCompare(b.name);
+              });
+              return {
+                ...item,
+                children: updatedChildren,
+                childrenLoaded: true,
+              };
+            }
+            if (item.children) {
+              return {
+                ...item,
+                children: addToParent(item.children),
+              };
+            }
+            return item;
+          });
+        };
+
+        state.folderStructure.tree = addToParent(state.folderStructure.tree);
+      }
+    },
+    collapseAllFolders: state => {
+      const collapseRecursively = (items: TFolderTree[]): TFolderTree[] => {
+        return items.map(item => ({
+          ...item,
+          children: item.children
+            ? collapseRecursively(item.children)
+            : undefined,
+        }));
+      };
+
+      if (state.folderStructure.tree) {
+        state.folderStructure.tree = collapseRecursively(
+          state.folderStructure.tree,
+        );
+      }
+      // Also collapse root
+      state.sidebarState.explorerExpanded = false;
+    },
     // App state actions
     setAppTitle: (state, action: PayloadAction<string>) => {
       state.appState.title = action.payload;
@@ -322,6 +391,9 @@ export const {
   toggleSearchFileExpansion,
   clearSearchState,
   setExplorerExpanded,
+  setLastClickedItem,
+  addTreeItem,
+  collapseAllFolders,
   setAppTitle,
 } = mainSlice.actions;
 

@@ -1,10 +1,24 @@
-import { Box, styled, Typography, IconButton, Tooltip } from '@mui/material';
+import {
+  Box,
+  styled,
+  Typography,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+} from '@mui/material';
 import { memo, useEffect, useCallback, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../shared/hooks';
 import {
   setFolderStructure,
   updateTreeItem,
   setExplorerExpanded,
+  addTreeItem,
+  collapseAllFolders,
 } from '../shared/rdx-slice';
 import { FileTree } from '../components/file-tree';
 import { IFolderStructure, TFolderTree } from '../shared/types';
@@ -195,7 +209,21 @@ export const ExplorerSection = memo(() => {
   const isRootExpanded = useAppSelector(
     state => state.main.sidebarState.explorerExpanded,
   );
+  const lastClickedItem = useAppSelector(
+    state => state.main.sidebarState.lastClickedItem,
+  );
   const [isRootHovered, setIsRootHovered] = useState(false);
+
+  // Modal state for input dialogs
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: 'file' | 'folder' | null;
+    value: string;
+  }>({
+    isOpen: false,
+    type: null,
+    value: '',
+  });
 
   const openFolder = useCallback(async () => {
     try {
@@ -259,23 +287,154 @@ export const ExplorerSection = memo(() => {
 
   const handleNewFile = useCallback(() => {
     console.log('New file clicked');
-    // TODO: Implement new file functionality
+
+    setModalState({
+      isOpen: true,
+      type: 'file',
+      value: '',
+    });
   }, []);
 
   const handleNewFolder = useCallback(() => {
     console.log('New folder clicked');
-    // TODO: Implement new folder functionality
+
+    setModalState({
+      isOpen: true,
+      type: 'folder',
+      value: '',
+    });
+  }, []);
+
+  const handleModalConfirm = useCallback(() => {
+    const name = modalState.value.trim();
+    if (!name) {
+      return; // Empty name
+    }
+
+    let targetDirectory: string;
+
+    if (!lastClickedItem) {
+      // No item clicked - create in root
+      targetDirectory = folderStructure.root;
+    } else if (lastClickedItem.isDirectory) {
+      // Folder was clicked - create inside it
+      targetDirectory = lastClickedItem.path;
+    } else {
+      // File was clicked - create next to it (in same directory)
+      targetDirectory = lastClickedItem.parentPath;
+    }
+
+    const itemPath =
+      targetDirectory.endsWith('/') || targetDirectory.endsWith('\\')
+        ? targetDirectory + name
+        : targetDirectory + '/' + name;
+
+    if (modalState.type === 'file') {
+      // Create file
+      window.electron
+        ?.createFile?.(itemPath, '')
+        .then(() => {
+          console.log('File created successfully:', itemPath);
+
+          const newItem: TFolderTree = {
+            name,
+            parentPath: targetDirectory,
+            path: itemPath,
+            isDirectory: false,
+            children: undefined,
+            childrenLoaded: undefined,
+            isGitIgnored: false,
+          };
+
+          dispatch(addTreeItem({ parentPath: targetDirectory, newItem }));
+        })
+        .catch(error => {
+          console.error('Error creating file:', error);
+          alert(`Error creating file: ${error.message || error}`);
+        });
+    } else if (modalState.type === 'folder') {
+      // Create folder
+      window.electron
+        ?.createFolder?.(itemPath)
+        .then(() => {
+          console.log('Folder created successfully:', itemPath);
+
+          const newItem: TFolderTree = {
+            name,
+            parentPath: targetDirectory,
+            path: itemPath,
+            isDirectory: true,
+            children: [],
+            childrenLoaded: true,
+            isGitIgnored: false,
+          };
+
+          dispatch(addTreeItem({ parentPath: targetDirectory, newItem }));
+        })
+        .catch(error => {
+          console.error('Error creating folder:', error);
+          alert(`Error creating folder: ${error.message || error}`);
+        });
+    }
+
+    // Close modal
+    setModalState({ isOpen: false, type: null, value: '' });
+  }, [modalState, lastClickedItem, folderStructure.root, dispatch]);
+
+  const handleModalCancel = useCallback(() => {
+    setModalState({ isOpen: false, type: null, value: '' });
   }, []);
 
   const handleRefresh = useCallback(() => {
     console.log('Refresh clicked');
-    // TODO: Implement refresh functionality
-  }, []);
+
+    if (!folderStructure.root) {
+      console.warn('No folder structure to refresh');
+      return;
+    }
+
+    // Re-open the current folder to refresh the structure
+    window.electron
+      ?.openFolder?.()
+      .then(async (folder: IFolderStructure) => {
+        if (folder && Object.keys(folder).length > 0) {
+          // Initialize gitignore checker
+          try {
+            const gitIgnoreChecker = await initializeGitIgnore(folder.root);
+            console.log(
+              'GitIgnore patterns loaded:',
+              gitIgnoreChecker.getPatterns(),
+            );
+
+            // Mark files as git ignored
+            const updatedTree = markGitIgnoredFiles(
+              folder.tree,
+              gitIgnoreChecker,
+            );
+
+            dispatch(
+              setFolderStructure({
+                ...folder,
+                tree: updatedTree,
+              }),
+            );
+          } catch (error) {
+            console.warn('Failed to initialize gitignore:', error);
+            // Still set the folder structure without gitignore info
+            dispatch(setFolderStructure(folder));
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error refreshing folder:', error);
+        alert(`Error refreshing folder: ${error.message || error}`);
+      });
+  }, [folderStructure.root, dispatch]);
 
   const handleCollapseAll = useCallback(() => {
     console.log('Collapse all clicked');
-    // TODO: Implement collapse all functionality
-  }, []);
+    dispatch(collapseAllFolders());
+  }, [dispatch]);
 
   const hasFolder = folderStructure && Object.keys(folderStructure).length > 0;
 
@@ -347,6 +506,49 @@ export const ExplorerSection = memo(() => {
           <DefaultButton onClick={openFolder}>Open Folder</DefaultButton>
         </EmptyState>
       )}
+
+      {/* Input Modal */}
+      <Dialog
+        open={modalState.isOpen}
+        onClose={handleModalCancel}
+        maxWidth="sm"
+        fullWidth>
+        <DialogTitle>
+          {modalState.type === 'file' ? 'Create New File' : 'Create New Folder'}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label={modalState.type === 'file' ? 'File name' : 'Folder name'}
+            fullWidth
+            variant="outlined"
+            value={modalState.value}
+            onChange={e =>
+              setModalState(prev => ({ ...prev, value: e.target.value }))
+            }
+            onKeyPress={e => {
+              if (e.key === 'Enter') {
+                handleModalConfirm();
+              }
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                handleModalCancel();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleModalCancel}>Cancel</Button>
+          <Button
+            onClick={handleModalConfirm}
+            variant="contained"
+            disabled={!modalState.value.trim()}>
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ExplorerContainer>
   );
 });
