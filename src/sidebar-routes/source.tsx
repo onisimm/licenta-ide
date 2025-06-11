@@ -27,8 +27,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   CheckCircle as CheckCircleIcon,
-  RadioButtonUnchecked as UnstagedIcon,
-  Restore as RestoreIcon,
   Undo as UndoIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '../shared/hooks';
@@ -644,63 +642,65 @@ export const SourceSection = memo(() => {
 
       <FileListContainer>
         {/* Changes Section */}
-        <>
-          <SectionHeader onClick={() => toggleSection('changes')}>
-            <SectionTitle>
-              {expandedSections.changes ? (
-                <ExpandMoreIcon sx={{ fontSize: 16 }} />
-              ) : (
-                <ExpandLessIcon sx={{ fontSize: 16 }} />
-              )}
-              Changes ({unstagedFiles.length})
-            </SectionTitle>
-            <SourceTooltip title="Stage all changes">
-              <SuccessIconButton
-                size="small"
-                onClick={e => {
-                  e.stopPropagation();
-                  handleStageAll();
-                }}>
-                <AddIcon sx={{ fontSize: 16 }} />
-              </SuccessIconButton>
-            </SourceTooltip>
-          </SectionHeader>
-          <Collapse in={expandedSections.changes}>
-            <Box>
-              {unstagedFiles.map(file => (
-                <FileItem key={file.path}>
-                  <StatusChip
-                    label={getStatusIcon(file.status)}
-                    size="small"
-                    color={getStatusColor(file.status, false)}
-                    variant="outlined"
-                  />
-                  <FileName>{file.path}</FileName>
-                  <SourceTooltip title={`Stage "${file.path}"`}>
-                    <SuccessIconButton
+        {(stagedFiles.length > 0 || unstagedFiles.length > 0) && (
+          <>
+            <SectionHeader onClick={() => toggleSection('changes')}>
+              <SectionTitle>
+                {expandedSections.changes ? (
+                  <ExpandMoreIcon sx={{ fontSize: 16 }} />
+                ) : (
+                  <ExpandLessIcon sx={{ fontSize: 16 }} />
+                )}
+                Changes ({unstagedFiles.length})
+              </SectionTitle>
+              <SourceTooltip title="Stage all changes">
+                <SuccessIconButton
+                  size="small"
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleStageAll();
+                  }}>
+                  <AddIcon sx={{ fontSize: 16 }} />
+                </SuccessIconButton>
+              </SourceTooltip>
+            </SectionHeader>
+            <Collapse in={expandedSections.changes}>
+              <Box>
+                {unstagedFiles.map(file => (
+                  <FileItem key={file.path}>
+                    <StatusChip
+                      label={getStatusIcon(file.status)}
                       size="small"
-                      onClick={() => handleStageFile(file.path, false)}>
-                      <AddIcon sx={{ fontSize: 14 }} />
-                    </SuccessIconButton>
-                  </SourceTooltip>
-                  {/* Show discard button for all files */}
-                  <SourceTooltip
-                    title={
-                      file.status === 'untracked'
-                        ? `Delete and discard changes to "${file.path}"`
-                        : `Discard changes to "${file.path}"`
-                    }>
-                    <WarningIconButton
-                      size="small"
-                      onClick={() => handleDiscardClick(file)}>
-                      <UndoIcon sx={{ fontSize: 14 }} />
-                    </WarningIconButton>
-                  </SourceTooltip>
-                </FileItem>
-              ))}
-            </Box>
-          </Collapse>
-        </>
+                      color={getStatusColor(file.status, false)}
+                      variant="outlined"
+                    />
+                    <FileName>{file.path}</FileName>
+                    <SourceTooltip title={`Stage "${file.path}"`}>
+                      <SuccessIconButton
+                        size="small"
+                        onClick={() => handleStageFile(file.path, false)}>
+                        <AddIcon sx={{ fontSize: 14 }} />
+                      </SuccessIconButton>
+                    </SourceTooltip>
+                    {/* Show discard button for all files */}
+                    <SourceTooltip
+                      title={
+                        file.status === 'untracked'
+                          ? `Delete and discard changes to "${file.path}"`
+                          : `Discard changes to "${file.path}"`
+                      }>
+                      <WarningIconButton
+                        size="small"
+                        onClick={() => handleDiscardClick(file)}>
+                        <UndoIcon sx={{ fontSize: 14 }} />
+                      </WarningIconButton>
+                    </SourceTooltip>
+                  </FileItem>
+                ))}
+              </Box>
+            </Collapse>
+          </>
+        )}
 
         {/* Staged Changes Section */}
         {stagedFiles.length > 0 && (

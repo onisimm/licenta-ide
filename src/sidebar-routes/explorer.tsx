@@ -27,6 +27,12 @@ import {
   initializeGitIgnore,
   getGitIgnoreChecker,
 } from '../shared/gitignore-utils';
+import {
+  Refresh as RefreshIcon,
+  Add as NewFileIcon,
+  AddBoxOutlined as NewFolderIcon,
+  ArrowUpwardRounded as CollapseIcon,
+} from '@mui/icons-material';
 import { DefaultButton } from '../components/buttons';
 
 const ExplorerContainer = styled(Box)(({ theme }) => ({
@@ -154,32 +160,6 @@ const EmptyState = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   gap: theme.spacing(1),
 }));
-
-// Action button icons (simple SVG icons for now)
-const NewFileIcon = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor">
-    <path d="M14,2H7L5,0H1A1,1,0,0,0,0,1V15a1,1,0,0,0,1,1H14a1,1,0,0,0,1-1V3A1,1,0,0,0,14,2ZM8,12H7V9H4V8H7V5H8V8h3V9H8Z" />
-  </svg>
-);
-
-const NewFolderIcon = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor">
-    <path d="M14,2H7L5,0H1A1,1,0,0,0,0,1V15a1,1,0,0,0,1,1H14a1,1,0,0,0,1-1V3A1,1,0,0,0,14,2ZM8,10H7V7H5V6H7V4H8V6h2V7H8Z" />
-  </svg>
-);
-
-const RefreshIcon = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor">
-    <path d="M13.65,2.35A8,8,0,0,0,2.35,13.65,8,8,0,0,0,13.65,2.35ZM12.24,3.76a6.5,6.5,0,1,1-8.48,8.48A6.5,6.5,0,0,1,12.24,3.76Z" />
-    <path d="M8,4.5V8L10.25,6Z" />
-  </svg>
-);
-
-const CollapseIcon = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor">
-    <path d="M9,9H7V7H9Zm4,0H11V7h2ZM5,9H3V7H5Zm4,4H7V11H9Zm4,0H11V11h2ZM5,13H3V11H5ZM9,5H7V3H9Zm4,0H11V3h2ZM5,5H3V3H5Z" />
-  </svg>
-);
 
 // Helper function to mark files as git ignored
 const markGitIgnoredFiles = (
