@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { TFolderTree } from '../shared/types';
 import { getFileIcon } from '../icons/file-types';
-import { useAppDispatch } from '../shared/hooks';
+import { useAppDispatch, useAppSelector } from '../shared/hooks';
 import {
   setLoadingFile,
   openFileInTab,
@@ -261,6 +261,9 @@ export const FileTree: React.FC<FileTreeProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const collapseTimestamp = useAppSelector(
+    state => state.main.sidebarState.collapseTimestamp,
+  );
 
   // Add error handling for this component
   useEffect(() => {
@@ -287,6 +290,13 @@ export const FileTree: React.FC<FileTreeProps> = ({
       window.removeEventListener('error', handleError);
     };
   }, []);
+
+  // Listen for collapse all action and clear expanded items
+  useEffect(() => {
+    if (collapseTimestamp > 0) {
+      setExpandedItems(new Set());
+    }
+  }, [collapseTimestamp]);
 
   // Use useMemo to prevent unnecessary re-creation of tree items
   const treeItems = useMemo(() => items, [items]);

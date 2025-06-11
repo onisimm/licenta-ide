@@ -99,6 +99,16 @@ const renderer = {
     }
   },
 
+  refreshFolder: async () => {
+    try {
+      const result = await ipcRenderer.invoke('refresh-folder');
+      return result;
+    } catch (error) {
+      console.error('Error in refreshFolder preload:', error);
+      throw normalizeError(error);
+    }
+  },
+
   // Git operations
   getGitStatus: async (folderPath: string) => {
     try {

@@ -393,9 +393,9 @@ export const ExplorerSection = memo(() => {
       return;
     }
 
-    // Re-open the current folder to refresh the structure
+    // Use the new refresh API to re-fetch the current folder
     window.electron
-      ?.openFolder?.()
+      ?.refreshFolder?.()
       .then(async (folder: IFolderStructure) => {
         if (folder && Object.keys(folder).length > 0) {
           // Initialize gitignore checker

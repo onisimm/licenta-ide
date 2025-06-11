@@ -952,6 +952,60 @@ ipcMain.handle('create-folder', async (event, folderPath: string) => {
   }
 });
 
+// IPC handler for refreshing current folder structure
+ipcMain.handle('refresh-folder', async () => {
+  try {
+    console.log('🔄 Refreshing current folder structure...');
+
+    // @ts-ignore
+    const currentFolder = store.get(SELECTED_FOLDER_STORE_NAME);
+
+    if (!currentFolder || !currentFolder.root) {
+      throw new Error('No folder currently open');
+    }
+
+    const folderPath = currentFolder.root;
+    console.log('📁 Refreshing folder:', folderPath);
+
+    // Load first level instantly for immediate UI response
+    const singleLevelTree = await buildSingleLevelTreeAsync(folderPath);
+
+    const refreshedStructure = {
+      name: path.basename(folderPath),
+      root: folderPath,
+      tree: singleLevelTree,
+      backgroundLoading: false,
+    };
+
+    // Update stored structure
+    // @ts-ignore
+    store.set(SELECTED_FOLDER_STORE_NAME, refreshedStructure);
+
+    // Load 2 levels for better initial tree
+    const twoLevelTree = await buildInitialFileTreeAsync(folderPath, 2, 0);
+
+    refreshedStructure.tree = twoLevelTree;
+
+    // Update stored structure
+    // @ts-ignore
+    store.set(SELECTED_FOLDER_STORE_NAME, refreshedStructure);
+
+    console.log('✅ Folder refreshed successfully');
+    return refreshedStructure;
+  } catch (error) {
+    console.error('❌ Error refreshing folder:', error);
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error refreshing folder';
+
+    throw new Error(`Failed to refresh folder: ${errorMessage}`);
+  }
+});
+
 // New IPC handler for searching files in folder
 ipcMain.handle(
   'search-in-folder',

@@ -43,6 +43,7 @@ interface SearchState {
 interface SidebarState {
   explorerExpanded: boolean; // Root folder expansion state
   lastClickedItem: TFolderTree | null; // Track last clicked item for context operations
+  collapseTimestamp: number; // Timestamp when collapse all was triggered
 }
 
 // App state for application-level settings
@@ -75,6 +76,7 @@ const initialState: IMainStateWithPersistence = {
   sidebarState: {
     explorerExpanded: true,
     lastClickedItem: null,
+    collapseTimestamp: 0,
   },
   appState: {
     title: 'SEditor',
@@ -357,8 +359,9 @@ export const mainSlice = createSlice({
           state.folderStructure.tree,
         );
       }
-      // Also collapse root
-      state.sidebarState.explorerExpanded = false;
+      // Keep root folder expanded - only collapse tree items
+      // Set timestamp to notify FileTree component
+      state.sidebarState.collapseTimestamp = Date.now();
     },
     // App state actions
     setAppTitle: (state, action: PayloadAction<string>) => {
