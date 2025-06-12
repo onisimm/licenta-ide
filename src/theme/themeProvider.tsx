@@ -17,6 +17,7 @@ const ThemeContext = createContext({
   setTheme: (isDark: boolean) => {},
   currentTheme: 'dark',
   setThemeByName: (themeName: string) => {},
+  isInitialized: false,
 });
 
 // Get initial theme from electron store or default to dark
@@ -134,6 +135,7 @@ export const CustomThemeProvider = ({
         setTheme,
         currentTheme,
         setThemeByName,
+        isInitialized,
       }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />

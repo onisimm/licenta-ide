@@ -100,7 +100,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
     const theme = useTheme();
-    const { isDarkMode, currentTheme } = useThemeToggle();
+    const { isDarkMode, currentTheme, isInitialized } = useThemeToggle();
 
     // Project operations hook - centralized file/folder operations
     const {
@@ -341,6 +341,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     useEffect(() => {
       if (editorRef.current && monacoInstanceRef.current) {
         try {
+          console.log(
+            `Monaco theme update triggered: currentTheme=${currentTheme}, isDarkMode=${isDarkMode}`,
+          );
+
           // Redefine themes with current theme colors
           monacoInstanceRef.current.editor.defineTheme('vs-dark-custom', {
             base: 'vs-dark',
@@ -377,15 +381,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
           });
 
           // Set the appropriate theme
-          monacoInstanceRef.current.editor.setTheme(
-            isDarkMode ? 'vs-dark-custom' : 'vs-light-custom',
-          );
+          const targetTheme = isDarkMode ? 'vs-dark-custom' : 'vs-light-custom';
+          monacoInstanceRef.current.editor.setTheme(targetTheme);
+          console.log(`Monaco theme set to: ${targetTheme}`);
         } catch (error) {
           console.error('Error setting Monaco theme:', error);
           logError('Monaco Theme Switch', error);
         }
       }
-    }, [currentTheme, theme.palette.editor]);
+    }, [currentTheme, isDarkMode, theme.palette.editor]);
 
     const handleEditorDidMount = (
       editor: monaco.editor.IStandaloneCodeEditor,
@@ -453,8 +457,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
         });
 
         // Set the appropriate theme based on current mode
-        monacoInstance.editor.setTheme(
-          isDarkMode ? 'vs-dark-custom' : 'vs-light-custom',
+        const initialTheme = isDarkMode ? 'vs-dark-custom' : 'vs-light-custom';
+        monacoInstance.editor.setTheme(initialTheme);
+        console.log(
+          `Monaco editor mounted with theme: ${initialTheme}, currentTheme=${currentTheme}, isDarkMode=${isDarkMode}`,
         );
 
         // Configure TypeScript compiler options for better JSX/TSX support
@@ -662,6 +668,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
 
     // Check if current file has unsaved changes
     const hasUnsavedChanges = activeFile?.hasUnsavedChanges || false;
+
+    // Show loading until theme is initialized
+    if (!isInitialized) {
+      return (
+        <EditorContainer>
+          <EditorWrapper>
+            <LoadingContainer>
+              <CircularProgress size={24} />
+              <LoadingText>Initializing theme...</LoadingText>
+            </LoadingContainer>
+          </EditorWrapper>
+        </EditorContainer>
+      );
+    }
 
     return (
       <EditorContainer>
