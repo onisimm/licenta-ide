@@ -42,11 +42,96 @@ const FieldContainer = styled(Box)(({ theme }) => ({
 }));
 
 export const SettingsSection = memo(() => {
-  const { currentTheme, setThemeByName } = useThemeToggle();
-  const [zoomLevel, setZoomLevel] = useState(() => {
-    const saved = localStorage.getItem('zoom-level');
-    return saved ? parseFloat(saved) : 1.0;
-  });
+  const { toggleTheme, currentTheme, setThemeByName } = useThemeToggle();
+  const [zoom, setZoom] = useState(1);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize zoom level on mount
+  useEffect(() => {
+    const initializeZoom = async () => {
+      try {
+        if (window.electron?.getZoomLevel) {
+          const stored = await window.electron.getZoomLevel();
+          setZoom(stored);
+          // Apply the zoom level
+          if (window.electron?.setZoomLevel) {
+            window.electron.setZoomLevel(stored);
+          }
+        } else {
+          // Fallback to localStorage
+          const saved = localStorage.getItem('zoom-level');
+          const savedZoom = saved ? parseFloat(saved) : 1;
+          setZoom(savedZoom);
+        }
+      } catch (error) {
+        console.warn(
+          'Failed to get zoom level from electron store, using localStorage:',
+          error,
+        );
+        try {
+          const saved = localStorage.getItem('zoom-level');
+          const savedZoom = saved ? parseFloat(saved) : 1;
+          setZoom(savedZoom);
+        } catch (localError) {
+          console.warn(
+            'Failed to get zoom level from localStorage:',
+            localError,
+          );
+          setZoom(1);
+        }
+      }
+      setIsInitialized(true);
+    };
+
+    initializeZoom();
+  }, []);
+
+  const handleZoomChange = useCallback(async (newZoom: number) => {
+    setZoom(newZoom);
+
+    try {
+      if (window.electron?.setZoomLevel) {
+        await window.electron.setZoomLevel(newZoom);
+      } else {
+        // Fallback to localStorage
+        localStorage.setItem('zoom-level', newZoom.toString());
+      }
+    } catch (error) {
+      console.warn(
+        'Failed to save zoom level to electron store, using localStorage:',
+        error,
+      );
+      try {
+        localStorage.setItem('zoom-level', newZoom.toString());
+      } catch (localError) {
+        console.warn('Failed to save zoom level to localStorage:', localError);
+      }
+    }
+  }, []);
+
+  const handleResetZoom = useCallback(async () => {
+    const defaultZoom = 1;
+    setZoom(defaultZoom);
+
+    try {
+      if (window.electron?.setZoomLevel) {
+        await window.electron.setZoomLevel(defaultZoom);
+      } else {
+        // Fallback to localStorage
+        localStorage.setItem('zoom-level', defaultZoom.toString());
+      }
+    } catch (error) {
+      console.warn(
+        'Failed to save zoom level to electron store, using localStorage:',
+        error,
+      );
+      try {
+        localStorage.setItem('zoom-level', defaultZoom.toString());
+      } catch (localError) {
+        console.warn('Failed to save zoom level to localStorage:', localError);
+      }
+    }
+  }, []);
 
   const handleThemeChange = useCallback(
     (event: any) => {
@@ -55,34 +140,6 @@ export const SettingsSection = memo(() => {
     },
     [setThemeByName],
   );
-
-  const handleZoomChange = useCallback((event: any) => {
-    const zoom = parseFloat(event.target.value);
-    setZoomLevel(zoom);
-    localStorage.setItem('zoom-level', zoom.toString());
-
-    // Apply zoom using Electron's API if available
-    if (window.electron?.setZoomLevel) {
-      window.electron.setZoomLevel(zoom);
-    }
-  }, []);
-
-  const handleResetZoom = useCallback(() => {
-    const defaultZoom = 1.0;
-    setZoomLevel(defaultZoom);
-    localStorage.setItem('zoom-level', defaultZoom.toString());
-
-    if (window.electron?.setZoomLevel) {
-      window.electron.setZoomLevel(defaultZoom);
-    }
-  }, []);
-
-  // Apply saved zoom level on component mount
-  useEffect(() => {
-    if (window.electron?.setZoomLevel) {
-      window.electron.setZoomLevel(zoomLevel);
-    }
-  }, []);
 
   const availableThemes = getAvailableThemes();
 
@@ -139,8 +196,10 @@ export const SettingsSection = memo(() => {
             <InputLabel id="zoom-select-label">Select Zoom Level</InputLabel>
             <Select
               labelId="zoom-select-label"
-              value={zoomLevel}
-              onChange={handleZoomChange}
+              value={zoom.toString()}
+              onChange={event =>
+                handleZoomChange(parseFloat(event.target.value))
+              }
               label="Select Zoom Level">
               {zoomOptions.map(option => (
                 <MenuItem key={option.value} value={option.value}>
@@ -157,7 +216,7 @@ export const SettingsSection = memo(() => {
               mt: 1,
             }}>
             <Typography variant="caption" color="text.secondary">
-              Current: {Math.round(zoomLevel * 100)}%
+              Current: {Math.round(zoom * 100)}%
             </Typography>
             <Button
               size="small"
@@ -183,7 +242,7 @@ export const SettingsSection = memo(() => {
           </strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Zoom Level: <strong>{Math.round(zoomLevel * 100)}%</strong>
+          Zoom Level: <strong>{Math.round(zoom * 100)}%</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">
           A modern code editor with {availableThemes.length} unique themes to

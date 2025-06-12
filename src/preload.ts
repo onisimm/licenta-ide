@@ -364,6 +364,15 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  getZoomLevel: async () => {
+    try {
+      const result = await ipcRenderer.invoke('get-zoom-level');
+      return result;
+    } catch (error) {
+      console.error('Error in getZoomLevel preload:', error);
+      throw normalizeError(error);
+    }
+  },
   setZoomLevel: async (zoomLevel: number) => {
     try {
       const result = await ipcRenderer.invoke('set-zoom-level', zoomLevel);
@@ -403,6 +412,44 @@ const renderer = {
     const listener = (_event: any, data: any) => callback(data);
     ipcRenderer.on('tree-loading-error', listener);
     return () => ipcRenderer.removeListener('tree-loading-error', listener);
+  },
+
+  // Settings persistence methods
+  getTheme: async () => {
+    try {
+      const result = await ipcRenderer.invoke('get-theme');
+      return result;
+    } catch (error) {
+      console.error('Error in getTheme preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  setTheme: async (theme: string) => {
+    try {
+      const result = await ipcRenderer.invoke('set-theme', theme);
+      return result;
+    } catch (error) {
+      console.error('Error in setTheme preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  getSidebarWidth: async () => {
+    try {
+      const result = await ipcRenderer.invoke('get-sidebar-width');
+      return result;
+    } catch (error) {
+      console.error('Error in getSidebarWidth preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  setSidebarWidth: async (width: number) => {
+    try {
+      const result = await ipcRenderer.invoke('set-sidebar-width', width);
+      return result;
+    } catch (error) {
+      console.error('Error in setSidebarWidth preload:', error);
+      throw normalizeError(error);
+    }
   },
 };
 

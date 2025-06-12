@@ -19,14 +19,28 @@ const ThemeContext = createContext({
   setThemeByName: (themeName: string) => {},
 });
 
-// Get initial theme from localStorage or default to dark
-const getInitialTheme = (): string => {
+// Get initial theme from electron store or default to dark
+const getInitialTheme = async (): Promise<string> => {
   if (typeof window === 'undefined') return 'dark'; // Default to dark for SSR
 
   try {
-    const stored = localStorage.getItem('theme');
-    if (stored !== null) {
-      return stored;
+    // Try to get theme from electron store first
+    if (window.electron?.getTheme) {
+      const stored = await window.electron.getTheme();
+      if (stored) {
+        return stored;
+      }
+    }
+
+    // Fallback to localStorage for development/backwards compatibility
+    const localStored = localStorage.getItem('theme');
+    if (localStored !== null) {
+      // Migrate to electron store if available
+      if (window.electron?.setTheme) {
+        await window.electron.setTheme(localStored);
+        localStorage.removeItem('theme'); // Clean up old storage
+      }
+      return localStored;
     }
 
     // If no stored preference, check system preference
@@ -34,8 +48,16 @@ const getInitialTheme = (): string => {
       ? 'dark'
       : 'light';
   } catch (error) {
-    console.warn('Failed to read theme from localStorage:', error);
-    return 'dark'; // Default to dark
+    console.warn('Failed to read theme from electron store:', error);
+
+    // Fallback to localStorage
+    try {
+      const stored = localStorage.getItem('theme');
+      return stored || 'dark';
+    } catch (localError) {
+      console.warn('Failed to read theme from localStorage:', error);
+      return 'dark'; // Default to dark
+    }
   }
 };
 
@@ -45,16 +67,47 @@ export const CustomThemeProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [currentTheme, setCurrentTheme] = useState<string>(getInitialTheme);
+  const [currentTheme, setCurrentTheme] = useState<string>('dark');
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Persist theme preference to localStorage
+  // Initialize theme on mount
   useEffect(() => {
-    try {
-      localStorage.setItem('theme', currentTheme);
-    } catch (error) {
-      console.warn('Failed to save theme to localStorage:', error);
-    }
-  }, [currentTheme]);
+    const initializeTheme = async () => {
+      const initialTheme = await getInitialTheme();
+      setCurrentTheme(initialTheme);
+      setIsInitialized(true);
+    };
+
+    initializeTheme();
+  }, []);
+
+  // Persist theme preference to electron store
+  useEffect(() => {
+    if (!isInitialized) return; // Don't save during initialization
+
+    const saveTheme = async () => {
+      try {
+        if (window.electron?.setTheme) {
+          await window.electron.setTheme(currentTheme);
+        } else {
+          // Fallback to localStorage
+          localStorage.setItem('theme', currentTheme);
+        }
+      } catch (error) {
+        console.warn(
+          'Failed to save theme to electron store, using localStorage:',
+          error,
+        );
+        try {
+          localStorage.setItem('theme', currentTheme);
+        } catch (localError) {
+          console.warn('Failed to save theme to localStorage:', localError);
+        }
+      }
+    };
+
+    saveTheme();
+  }, [currentTheme, isInitialized]);
 
   const toggleTheme = () => {
     setCurrentTheme(prev => (prev === 'light' ? 'dark' : 'light'));

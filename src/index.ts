@@ -65,6 +65,9 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 const SELECTED_FOLDER_STORE_NAME = 'selected-folder';
+const THEME_STORE_NAME = 'app-theme';
+const SIDEBAR_WIDTH_STORE_NAME = 'sidebar-width';
+const ZOOM_LEVEL_STORE_NAME = 'zoom-level';
 const store = new Store();
 
 // Global reference to main window
@@ -1502,7 +1505,17 @@ ipcMain.handle('set-zoom-level', async (event, zoomLevel: number) => {
 
     // Set the zoom level on the main window
     mainWindow.webContents.setZoomFactor(zoomLevel);
-    return true;
+
+    // Persist the zoom level to electron store
+    try {
+      // @ts-ignore
+      store.set(ZOOM_LEVEL_STORE_NAME, zoomLevel);
+    } catch (persistError) {
+      console.warn('Failed to persist zoom level:', persistError);
+      // Don't fail the operation if persistence fails
+    }
+
+    return { success: true };
   } catch (error) {
     console.error('❌ Error setting zoom level:', error);
     const errorMessage =
@@ -2194,6 +2207,59 @@ ipcMain.handle('open-terminal', async (event, folderPath?: string) => {
   } catch (error) {
     console.error('❌ Error opening terminal:', error);
     throw error;
+  }
+});
+
+// Settings persistence handlers
+ipcMain.handle('get-theme', async () => {
+  try {
+    // @ts-ignore
+    return store.get(THEME_STORE_NAME) || 'dark';
+  } catch (error) {
+    console.error('Error getting theme:', error);
+    return 'dark';
+  }
+});
+
+ipcMain.handle('set-theme', async (event, theme: string) => {
+  try {
+    // @ts-ignore
+    store.set(THEME_STORE_NAME, theme);
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting theme:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-sidebar-width', async () => {
+  try {
+    // @ts-ignore
+    return store.get(SIDEBAR_WIDTH_STORE_NAME) || 260;
+  } catch (error) {
+    console.error('Error getting sidebar width:', error);
+    return 260;
+  }
+});
+
+ipcMain.handle('set-sidebar-width', async (event, width: number) => {
+  try {
+    // @ts-ignore
+    store.set(SIDEBAR_WIDTH_STORE_NAME, width);
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting sidebar width:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('get-zoom-level', async () => {
+  try {
+    // @ts-ignore
+    return store.get(ZOOM_LEVEL_STORE_NAME) || 1;
+  } catch (error) {
+    console.error('Error getting zoom level:', error);
+    return 1;
   }
 });
 

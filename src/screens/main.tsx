@@ -44,17 +44,70 @@ const MainComponent = memo(() => {
   // Generate title based on folder state
   const title = hasFolder && folderName ? `SEditor — ${folderName}` : 'SEditor';
 
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH;
-  });
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const handleSidebarResize = useCallback((newWidth: number) => {
+  // Initialize sidebar width on mount
+  useEffect(() => {
+    const initializeSidebarWidth = async () => {
+      try {
+        if (window.electron?.getSidebarWidth) {
+          const stored = await window.electron.getSidebarWidth();
+          setSidebarWidth(stored);
+        } else {
+          // Fallback to localStorage
+          const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+          setSidebarWidth(saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH);
+        }
+      } catch (error) {
+        console.warn(
+          'Failed to get sidebar width from electron store, using localStorage:',
+          error,
+        );
+        try {
+          const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+          setSidebarWidth(saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH);
+        } catch (localError) {
+          console.warn(
+            'Failed to get sidebar width from localStorage:',
+            localError,
+          );
+          setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+        }
+      }
+      setIsInitialized(true);
+    };
+
+    initializeSidebarWidth();
+  }, []);
+
+  const handleSidebarResize = useCallback(async (newWidth: number) => {
     // Constrain width between 260px and 75% of screen width
     const maxWidth = Math.floor(window.innerWidth * 0.75);
     const constrainedWidth = Math.max(260, Math.min(maxWidth, newWidth));
     setSidebarWidth(constrainedWidth);
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
+
+    try {
+      if (window.electron?.setSidebarWidth) {
+        await window.electron.setSidebarWidth(constrainedWidth);
+      } else {
+        // Fallback to localStorage
+        localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
+      }
+    } catch (error) {
+      console.warn(
+        'Failed to save sidebar width to electron store, using localStorage:',
+        error,
+      );
+      try {
+        localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
+      } catch (localError) {
+        console.warn(
+          'Failed to save sidebar width to localStorage:',
+          localError,
+        );
+      }
+    }
   }, []);
 
   // Handle keyboard shortcuts for quick file opener
