@@ -273,6 +273,14 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   role: 'user' | 'assistant' | 'system';
+  modelName?: string;
+}
+
+interface ConversationSummary {
+  id: string;
+  content: string;
+  timestamp: Date;
+  messageCount: number;
 }
 
 interface DocumentContext {
@@ -309,6 +317,10 @@ export const AiChatSection = memo(() => {
   const [isSearching, setIsSearching] = useState(false);
   const searchAnchorRef = useRef<HTMLDivElement>(null);
   const { folderPath } = useProjectOperations();
+  const [conversationSummaries, setConversationSummaries] = useState<
+    ConversationSummary[]
+  >([]);
+  const MESSAGES_BEFORE_SUMMARY = 10; // 5 user-AI exchanges
 
   // Check for AI service availability on mount
   useEffect(() => {
@@ -337,21 +349,51 @@ export const AiChatSection = memo(() => {
 
   const addMessage = useCallback(
     (content: string, isUser: boolean) => {
-      const newMessage = {
+      const newMessage: Message = {
         id: Date.now().toString(),
         content,
         isUser,
         timestamp: new Date(),
         role: isUser ? 'user' : 'assistant',
+        modelName: isUser ? undefined : OPENAI_MODELS[currentModel]?.name,
       };
       dispatch(addChatMessage(newMessage));
     },
-    [dispatch],
+    [dispatch, currentModel],
   );
 
   const handleResetChat = useCallback(() => {
     dispatch(clearChatMessages());
+    setConversationSummaries([]);
   }, [dispatch]);
+
+  const generateSummary = useCallback(async (messages: Message[]) => {
+    const service = createAIService();
+    if (!service) {
+      throw new Error('No AI service available');
+    }
+
+    const summaryPrompt = `Please provide a concise summary of the following conversation, focusing on the key points and decisions made:
+
+${messages
+  .map(msg => `${msg.isUser ? 'User' : 'AI'}: ${msg.content}`)
+  .join('\n')}
+
+Summary:`;
+
+    try {
+      const summary = await service.generateContent(summaryPrompt);
+      return {
+        id: Date.now().toString(),
+        content: summary,
+        timestamp: new Date(),
+        messageCount: messages.length,
+      };
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      return null;
+    }
+  }, []);
 
   const callAIAPI = useCallback(
     async (prompt: string, context?: string) => {
@@ -362,19 +404,45 @@ export const AiChatSection = memo(() => {
         );
       }
 
-      // Prepare conversation history
-      const conversationHistory: ChatMessage[] = messages.map(msg => ({
+      // Get the last 10 messages for live context
+      const recentMessages = messages.slice(-MESSAGES_BEFORE_SUMMARY);
+
+      // Prepare conversation history with recent messages
+      const conversationHistory: ChatMessage[] = recentMessages.map(msg => ({
         role: msg.isUser ? 'user' : 'assistant',
         content: msg.content,
       }));
 
+      // Add summaries as system messages
+      if (conversationSummaries.length > 0) {
+        const summaryContext = conversationSummaries
+          .map(
+            summary =>
+              `Previous conversation summary (${summary.messageCount} messages):\n${summary.content}`,
+          )
+          .join('\n\n');
+
+        conversationHistory.unshift({
+          role: 'system',
+          content: `Here are summaries of previous conversations for context:\n\n${summaryContext}`,
+        });
+      }
+
+      // Add document context if available
+      if (context) {
+        conversationHistory.unshift({
+          role: 'system',
+          content: `You are a coding assistant embedded in an IDE. The following is relevant context from the user's project files. Use this to help answer questions, write code, or provide explanations based on the codebase:\n\n${context}`,
+        });
+      }
+
       return await service.generateContent(
         prompt,
-        context,
+        undefined,
         conversationHistory,
       );
     },
-    [messages],
+    [messages, conversationSummaries],
   );
 
   const handleSendMessage = useCallback(async () => {
@@ -403,6 +471,16 @@ export const AiChatSection = memo(() => {
 
       const response = await callAIAPI(userMessage, context);
       addMessage(response, false);
+
+      // Check if we need to generate a summary
+      if (messages.length + 2 >= MESSAGES_BEFORE_SUMMARY) {
+        // +2 for the current exchange
+        const messagesToSummarize = messages.slice(-MESSAGES_BEFORE_SUMMARY);
+        const summary = await generateSummary(messagesToSummarize);
+        if (summary) {
+          setConversationSummaries(prev => [...prev, summary]);
+        }
+      }
     } catch (error) {
       console.error('Chat error:', error);
       addMessage(
@@ -416,7 +494,15 @@ export const AiChatSection = memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, addMessage, callAIAPI, documentContext]);
+  }, [
+    input,
+    isLoading,
+    addMessage,
+    callAIAPI,
+    documentContext,
+    messages,
+    generateSummary,
+  ]);
 
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent) => {
@@ -693,7 +779,7 @@ export const AiChatSection = memo(() => {
             </Typography>
           </EmptyState>
         ) : (
-          messages.map(message => (
+          messages.map((message: Message) => (
             <MessageBubble
               key={message.id}
               isUser={message.isUser}
@@ -705,7 +791,7 @@ export const AiChatSection = memo(() => {
                   <SmartToy sx={{ fontSize: 16 }} />
                 )}
                 <Typography variant="caption">
-                  {message.isUser ? 'You' : 'AI'}
+                  {message.isUser ? 'You' : message.modelName || 'AI'}
                 </Typography>
                 <Typography variant="caption" sx={{ ml: 'auto', opacity: 0.6 }}>
                   {message.timestamp.toLocaleTimeString([], {

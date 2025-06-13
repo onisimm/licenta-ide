@@ -62,6 +62,8 @@ interface IMainStateWithPersistence extends IMainState {
       content: string;
       isUser: boolean;
       timestamp: Date;
+      role: 'user' | 'assistant' | 'system';
+      modelName?: string;
     }>;
   };
 }
@@ -463,6 +465,8 @@ export const mainSlice = createSlice({
         content: string;
         isUser: boolean;
         timestamp: Date;
+        role: 'user' | 'assistant' | 'system';
+        modelName?: string;
       }>,
     ) => {
       state.chatState.messages.push(action.payload);

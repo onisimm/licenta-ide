@@ -181,7 +181,7 @@ export class OpenAIService extends BaseAIService {
     if (context) {
       messages.push({
         role: 'system',
-        content: `You are a helpful AI assistant. Here is the context from the user's files:\n\n${context}`,
+        content: `You are a coding assistant embedded in an IDE. The following is relevant context from the user's project files. Use this to help answer questions, write code, or provide explanations based on the codebase:\n\n${context}`,
       });
     }
 
