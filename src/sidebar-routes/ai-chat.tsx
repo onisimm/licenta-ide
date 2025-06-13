@@ -10,6 +10,9 @@ import {
   Alert,
   IconButton,
   Chip,
+  Menu,
+  MenuItem,
+  Tooltip,
 } from '@mui/material';
 import {
   Send,
@@ -18,6 +21,7 @@ import {
   Settings,
   AttachFile,
   Refresh,
+  ExpandMore,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,6 +29,7 @@ import {
   createAIService,
   BaseAIService,
   AIProvider,
+  OPENAI_MODELS,
 } from '../services/ai-api-service';
 import { addChatMessage, clearChatMessages } from '../shared/rdx-slice';
 import { RootState } from '../shared/store';
@@ -139,6 +144,13 @@ export const AiChatSection = memo(() => {
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('openai');
   const [documentContext, setDocumentContext] = useState<DocumentContext[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [modelMenuAnchor, setModelMenuAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [currentModel, setCurrentModel] = useState(() => {
+    const savedModel = BaseAIService.getModel(currentProvider);
+    return OPENAI_MODELS[savedModel] ? savedModel : 'gpt-3.5-turbo';
+  });
 
   // Check for AI service availability on mount
   useEffect(() => {
@@ -258,6 +270,25 @@ export const AiChatSection = memo(() => {
 
   const providerDisplayName = 'OpenAI';
 
+  const handleModelClick = (event: React.MouseEvent<HTMLElement>) => {
+    setModelMenuAnchor(event.currentTarget);
+  };
+
+  const handleModelClose = () => {
+    setModelMenuAnchor(null);
+  };
+
+  const handleModelSelect = (modelId: string) => {
+    BaseAIService.setModel(currentProvider, modelId);
+    setCurrentModel(modelId);
+    handleModelClose();
+  };
+
+  const getCurrentModelName = () => {
+    const model = OPENAI_MODELS[currentModel];
+    return model ? model.name : 'GPT-3.5 Turbo';
+  };
+
   // If no AI service, show setup message
   if (!aiService) {
     return (
@@ -292,11 +323,27 @@ export const AiChatSection = memo(() => {
       <ChatHeader>
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
           <Typography variant="h6" sx={{ fontSize: '16px' }}>
-            AI Chat
+            Ask AI
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Using {providerDisplayName}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Using {providerDisplayName}
+            </Typography>
+            <Tooltip title="Select Model">
+              <Button
+                size="small"
+                endIcon={<ExpandMore />}
+                onClick={handleModelClick}
+                sx={{
+                  minWidth: 'auto',
+                  p: 0.5,
+                  color: 'text.secondary',
+                  '&:hover': { color: 'text.primary' },
+                }}>
+                {getCurrentModelName()}
+              </Button>
+            </Tooltip>
+          </Box>
         </Box>
         <Box>
           <IconButton
@@ -315,6 +362,28 @@ export const AiChatSection = memo(() => {
           </IconButton>
         </Box>
       </ChatHeader>
+
+      <Menu
+        anchorEl={modelMenuAnchor}
+        open={Boolean(modelMenuAnchor)}
+        onClose={handleModelClose}
+        PaperProps={{
+          sx: { maxHeight: 300, width: 250 },
+        }}>
+        {Object.values(OPENAI_MODELS).map(model => (
+          <MenuItem
+            key={model.id}
+            onClick={() => handleModelSelect(model.id)}
+            selected={model.id === currentModel}>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="body2">{model.name}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {model.description}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Menu>
 
       {documentContext.length > 0 && (
         <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>

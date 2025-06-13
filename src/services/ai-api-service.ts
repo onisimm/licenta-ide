@@ -14,16 +14,63 @@ export interface OpenAIResponse {
 // example: 'openai' | 'gemini'
 export type AIProvider = 'openai';
 
+export interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+  maxTokens: number;
+  temperature: number;
+}
+
+export const OPENAI_MODELS: Record<string, AIModel> = {
+  'gpt-3.5-turbo': {
+    id: 'gpt-3.5-turbo',
+    name: 'GPT-3.5 Turbo',
+    description: 'Fast and efficient for most tasks',
+    maxTokens: 2000,
+    temperature: 0.7,
+  },
+  'gpt-4': {
+    id: 'gpt-4',
+    name: 'GPT-4',
+    description: 'Most capable model, best for complex tasks',
+    maxTokens: 4000,
+    temperature: 0.7,
+  },
+  'gpt-4o-mini': {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    description: 'Fast, affordable small model for focused tasks',
+    maxTokens: 2000,
+    temperature: 0.7,
+  },
+  'gpt-4.1-mini': {
+    id: 'gpt-4.1-mini',
+    name: 'GPT-4.1 Mini',
+    description: 'Balanced for intelligence, speed, and cost',
+    maxTokens: 2000,
+    temperature: 0.7,
+  },
+  'gpt-4.1': {
+    id: 'gpt-4.1',
+    name: 'GPT-4.1',
+    description: 'Flagship GPT model for complex tasks',
+    maxTokens: 4000,
+    temperature: 0.7,
+  },
+};
+
 // Factory function to create the appropriate AI service
 export const createAIService = (): BaseAIService | null => {
   const provider = BaseAIService.getProvider();
   const apiKey = BaseAIService.getApiKey(provider);
+  const model = BaseAIService.getModel(provider);
 
   if (!apiKey) return null;
 
   switch (provider) {
     case 'openai':
-      return new OpenAIService(apiKey);
+      return new OpenAIService(apiKey, model);
     default:
       return null;
   }
@@ -32,9 +79,11 @@ export const createAIService = (): BaseAIService | null => {
 // Base class for all AI services
 export abstract class BaseAIService {
   protected apiKey: string;
+  protected model: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model: string = 'gpt-3.5-turbo') {
     this.apiKey = apiKey;
+    this.model = model;
   }
 
   abstract generateContent(prompt: string, context?: string): Promise<string>;
@@ -54,6 +103,14 @@ export abstract class BaseAIService {
 
   static setProvider(provider: AIProvider): void {
     localStorage.setItem('ai-provider', provider);
+  }
+
+  static getModel(provider: AIProvider): string {
+    return localStorage.getItem(`${provider}-model`) || 'gpt-3.5-turbo';
+  }
+
+  static setModel(provider: AIProvider, model: string): void {
+    localStorage.setItem(`${provider}-model`, model);
   }
 
   public static async validateApiKey(
@@ -109,6 +166,9 @@ export class OpenAIService extends BaseAIService {
       ? `Context:\n${context}\n\nQuestion: ${prompt}`
       : prompt;
 
+    const modelConfig =
+      OPENAI_MODELS[this.model] || OPENAI_MODELS['gpt-3.5-turbo'];
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -116,10 +176,10 @@ export class OpenAIService extends BaseAIService {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: this.model,
         messages: [{ role: 'user', content: fullPrompt }],
-        max_tokens: 2000,
-        temperature: 0.7,
+        max_tokens: modelConfig.maxTokens,
+        temperature: modelConfig.temperature,
       }),
     });
 
