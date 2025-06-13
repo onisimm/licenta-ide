@@ -8,6 +8,7 @@ This is a modern **code editor** built using **Electron** and **TypeScript**. In
 
 ---
 
+
 ## Challenges
 
 - Balancing simplicity and functionality in core features.
