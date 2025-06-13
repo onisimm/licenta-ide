@@ -20,6 +20,7 @@ import { openFileInTab } from '../shared/rdx-slice';
 interface QuickFileOpenerProps {
   open: boolean;
   onClose: () => void;
+  onFileSelect?: (file: FileEntry) => void;
 }
 
 interface FileEntry {
@@ -124,6 +125,7 @@ const EmptyState = styled(Box)(({ theme }) => ({
 export const QuickFileOpener: React.FC<QuickFileOpenerProps> = ({
   open,
   onClose,
+  onFileSelect,
 }) => {
   const dispatch = useAppDispatch();
   const { folderStructure, folderPath } = useProjectOperations();
@@ -252,19 +254,21 @@ export const QuickFileOpener: React.FC<QuickFileOpenerProps> = ({
   const handleFileSelect = useCallback(
     async (file: FileEntry) => {
       try {
-        // Read file content
-        const fileData = await window.electron.readFile(file.path);
-
-        if (fileData) {
-          // Open file in tab
-          dispatch(openFileInTab(fileData));
-          onClose();
+        if (onFileSelect) {
+          onFileSelect(file);
+        } else {
+          // Default behavior: open file in tab
+          const fileData = await window.electron.readFile(file.path);
+          if (fileData) {
+            dispatch(openFileInTab(fileData));
+          }
         }
+        onClose();
       } catch (error) {
         console.error('Error opening file:', error);
       }
     },
-    [dispatch, onClose],
+    [dispatch, onClose, onFileSelect],
   );
 
   // Handle keyboard navigation
