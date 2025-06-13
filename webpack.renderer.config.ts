@@ -21,4 +21,17 @@ export const rendererConfig: Configuration = {
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
   },
+  stats: {
+    colors: true,
+    modules: true,
+    reasons: true,
+    errorDetails: true,
+  },
+  devtool: 'source-map',
+  mode: 'development',
+  optimization: {
+    removeAvailableModules: false,
+    removeEmptyChunks: false,
+    splitChunks: false,
+  },
 };

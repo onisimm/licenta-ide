@@ -2270,10 +2270,25 @@ const createWindow = () => {
     height: 1000,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      webSecurity: true,
     },
     frame: false, // Frameless window
     titleBarStyle: 'hiddenInset',
   });
+
+  // Set CSP headers to allow API connections
+  mainWindow.webContents.session.webRequest.onHeadersReceived(
+    (details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self' 'unsafe-inline' data:; connect-src 'self' https://api.openai.com https://generativelanguage.googleapis.com https://*.openai.com https://*.googleapis.com",
+          ],
+        },
+      });
+    },
+  );
 
   // Add error handling for the webContents
   mainWindow.webContents.on('unresponsive', () => {

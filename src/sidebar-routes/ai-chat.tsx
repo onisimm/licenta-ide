@@ -1,0 +1,407 @@
+import { memo, useState, useCallback, useEffect, useRef } from 'react';
+import {
+  Box,
+  styled,
+  Typography,
+  TextField,
+  Button,
+  Paper,
+  CircularProgress,
+  Alert,
+  IconButton,
+  Chip,
+} from '@mui/material';
+import {
+  Send,
+  Person,
+  SmartToy,
+  Settings,
+  AttachFile,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { createAIService, AIService, AIProvider } from '../services/gemini-api';
+
+const ChatContainer = styled(Box)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+}));
+
+const ChatHeader = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(1, 2),
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: theme.palette.background.paper,
+}));
+
+const MessagesContainer = styled(Box)(({ theme }) => ({
+  flex: 1,
+  padding: theme.spacing(1),
+  overflow: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(1),
+}));
+
+const MessageBubble = styled(Paper)<{ isUser?: boolean }>(
+  ({ theme, isUser }) => ({
+    padding: theme.spacing(1, 1.5),
+    maxWidth: '85%',
+    alignSelf: isUser ? 'flex-end' : 'flex-start',
+    backgroundColor: isUser
+      ? theme.palette.primary.main
+      : theme.palette.background.paper,
+    color: isUser
+      ? theme.palette.primary.contrastText
+      : theme.palette.text.primary,
+    marginLeft: isUser ? 'auto' : 0,
+    marginRight: isUser ? 0 : 'auto',
+    position: 'relative',
+  }),
+);
+
+const MessageHeader = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(0.5),
+  marginBottom: theme.spacing(0.5),
+  fontSize: '12px',
+  opacity: 0.8,
+}));
+
+const MessageContent = styled(Typography)(({ theme }) => ({
+  fontSize: '14px',
+  lineHeight: 1.4,
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+}));
+
+const InputContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(1, 2),
+  borderTop: `1px solid ${theme.palette.divider}`,
+  display: 'flex',
+  gap: theme.spacing(1),
+  alignItems: 'flex-end',
+  backgroundColor: theme.palette.background.paper,
+}));
+
+const ContextChips = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: theme.spacing(0.5),
+  flexWrap: 'wrap',
+  marginBottom: theme.spacing(1),
+}));
+
+const EmptyState = styled(Box)(({ theme }) => ({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: theme.spacing(3),
+  textAlign: 'center',
+  color: theme.palette.text.secondary,
+}));
+
+interface Message {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: Date;
+}
+
+interface DocumentContext {
+  name: string;
+  content: string;
+  path: string;
+}
+
+export const AiChatSection = memo(() => {
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [aiService, setAiService] = useState<any>(null);
+  const [currentProvider, setCurrentProvider] = useState<AIProvider>('gemini');
+  const [documentContext, setDocumentContext] = useState<DocumentContext[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check for AI service availability on mount
+  useEffect(() => {
+    const checkAIService = () => {
+      const service = createAIService();
+      const provider = AIService.getProvider();
+      setAiService(service);
+      setCurrentProvider(provider);
+    };
+
+    checkAIService();
+
+    // Check periodically in case user configures it in profile
+    const interval = setInterval(checkAIService, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleGoToProfile = useCallback(() => {
+    navigate('/main_window/profile');
+  }, [navigate]);
+
+  const addMessage = useCallback((content: string, isUser: boolean) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      content,
+      isUser,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, newMessage]);
+  }, []);
+
+  const callAIAPI = useCallback(async (prompt: string, context?: string) => {
+    const service = createAIService();
+    if (!service) {
+      throw new Error(
+        'No AI service available. Please configure an API key in the profile section.',
+      );
+    }
+
+    return await service.generateContent(prompt, context);
+  }, []);
+
+  const handleSendMessage = useCallback(async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    addMessage(userMessage, true);
+    setIsLoading(true);
+
+    try {
+      // Prepare context from documents
+      const context =
+        documentContext.length > 0
+          ? documentContext
+              .map(
+                doc =>
+                  `File: ${doc.name}\nPath: ${
+                    doc.path
+                  }\nContent:\n${doc.content.slice(0, 2000)}${
+                    doc.content.length > 2000 ? '...' : ''
+                  }`,
+              )
+              .join('\n\n---\n\n')
+          : undefined;
+
+      const response = await callAIAPI(userMessage, context);
+      addMessage(response, false);
+    } catch (error) {
+      console.error('Chat error:', error);
+      addMessage(
+        `Error: ${
+          error instanceof Error
+            ? error.message
+            : 'Failed to get response from AI'
+        }`,
+        false,
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [input, isLoading, addMessage, callAIAPI, documentContext]);
+
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    },
+    [handleSendMessage],
+  );
+
+  const handleRemoveContext = useCallback((path: string) => {
+    setDocumentContext(prev => prev.filter(doc => doc.path !== path));
+  }, []);
+
+  const handleAddCurrentFile = useCallback(async () => {
+    // This would integrate with your existing file system
+    // For now, just show how it would work
+    console.log(
+      'Add current file to context - would need integration with file system',
+    );
+  }, []);
+
+  const getProviderDisplayName = (provider: AIProvider): string => {
+    switch (provider) {
+      case 'gemini':
+        return 'Google Gemini';
+      case 'openai':
+        return 'OpenAI';
+      default:
+        return 'AI';
+    }
+  };
+
+  // If no AI service, show setup message
+  if (!aiService) {
+    return (
+      <ChatContainer>
+        <ChatHeader>
+          <Typography variant="h6" sx={{ fontSize: '16px' }}>
+            AI Chat
+          </Typography>
+        </ChatHeader>
+        <EmptyState>
+          <SmartToy sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            AI Chat Setup Required
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2, maxWidth: 300 }}>
+            To use AI chat, you need to configure an API key for either Google
+            Gemini or OpenAI in the profile section.
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Settings />}
+            onClick={handleGoToProfile}>
+            Go to Profile
+          </Button>
+        </EmptyState>
+      </ChatContainer>
+    );
+  }
+
+  return (
+    <ChatContainer>
+      <ChatHeader>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography variant="h6" sx={{ fontSize: '16px' }}>
+            AI Chat
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Using {getProviderDisplayName(currentProvider)}
+          </Typography>
+        </Box>
+        <IconButton size="small" onClick={handleGoToProfile} title="Settings">
+          <Settings />
+        </IconButton>
+      </ChatHeader>
+
+      {documentContext.length > 0 && (
+        <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mb: 0.5, display: 'block' }}>
+            Document Context:
+          </Typography>
+          <ContextChips>
+            {documentContext.map(doc => (
+              <Chip
+                key={doc.path}
+                label={doc.name}
+                size="small"
+                onDelete={() => handleRemoveContext(doc.path)}
+                variant="outlined"
+              />
+            ))}
+          </ContextChips>
+        </Box>
+      )}
+
+      <MessagesContainer>
+        {messages.length === 0 ? (
+          <EmptyState>
+            <SmartToy sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              Welcome to AI Chat!
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Ask questions about your code, get help with documentation, or
+              discuss your project.
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<AttachFile />}
+              onClick={handleAddCurrentFile}
+              sx={{ mt: 2 }}
+              size="small">
+              Add Current File to Context
+            </Button>
+          </EmptyState>
+        ) : (
+          messages.map(message => (
+            <MessageBubble
+              key={message.id}
+              isUser={message.isUser}
+              elevation={1}>
+              <MessageHeader>
+                {message.isUser ? (
+                  <Person sx={{ fontSize: 16 }} />
+                ) : (
+                  <SmartToy sx={{ fontSize: 16 }} />
+                )}
+                <Typography variant="caption">
+                  {message.isUser ? 'You' : 'AI'}
+                </Typography>
+                <Typography variant="caption" sx={{ ml: 'auto', opacity: 0.6 }}>
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Typography>
+              </MessageHeader>
+              <MessageContent>{message.content}</MessageContent>
+            </MessageBubble>
+          ))
+        )}
+
+        {isLoading && (
+          <MessageBubble elevation={1}>
+            <MessageHeader>
+              <SmartToy sx={{ fontSize: 16 }} />
+              <Typography variant="caption">AI</Typography>
+            </MessageHeader>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={16} />
+              <Typography variant="body2" color="text.secondary">
+                Thinking...
+              </Typography>
+            </Box>
+          </MessageBubble>
+        )}
+
+        <div ref={messagesEndRef} />
+      </MessagesContainer>
+
+      <InputContainer>
+        <TextField
+          multiline
+          maxRows={4}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Ask about your code, documentation, or project..."
+          variant="outlined"
+          size="small"
+          fullWidth
+          disabled={isLoading}
+        />
+        <Button
+          variant="contained"
+          onClick={handleSendMessage}
+          disabled={!input.trim() || isLoading}
+          sx={{ minWidth: 'auto', px: 2 }}>
+          <Send sx={{ fontSize: 18 }} />
+        </Button>
+      </InputContainer>
+    </ChatContainer>
+  );
+});
