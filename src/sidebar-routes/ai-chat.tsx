@@ -36,6 +36,7 @@ import {
   BaseAIService,
   AIProvider,
   OPENAI_MODELS,
+  ChatMessage,
 } from '../services/ai-api-service';
 import { addChatMessage, clearChatMessages } from '../shared/rdx-slice';
 import { RootState } from '../shared/store';
@@ -200,6 +201,7 @@ interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
+  role: 'user' | 'assistant' | 'system';
 }
 
 interface DocumentContext {
@@ -269,6 +271,7 @@ export const AiChatSection = memo(() => {
         content,
         isUser,
         timestamp: new Date(),
+        role: isUser ? 'user' : 'assistant',
       };
       dispatch(addChatMessage(newMessage));
     },
@@ -279,16 +282,29 @@ export const AiChatSection = memo(() => {
     dispatch(clearChatMessages());
   }, [dispatch]);
 
-  const callAIAPI = useCallback(async (prompt: string, context?: string) => {
-    const service = createAIService();
-    if (!service) {
-      throw new Error(
-        'No AI service available. Please configure an API key in the profile section.',
-      );
-    }
+  const callAIAPI = useCallback(
+    async (prompt: string, context?: string) => {
+      const service = createAIService();
+      if (!service) {
+        throw new Error(
+          'No AI service available. Please configure an API key in the profile section.',
+        );
+      }
 
-    return await service.generateContent(prompt, context);
-  }, []);
+      // Prepare conversation history
+      const conversationHistory: ChatMessage[] = messages.map(msg => ({
+        role: msg.isUser ? 'user' : 'assistant',
+        content: msg.content,
+      }));
+
+      return await service.generateContent(
+        prompt,
+        context,
+        conversationHistory,
+      );
+    },
+    [messages],
+  );
 
   const handleSendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;

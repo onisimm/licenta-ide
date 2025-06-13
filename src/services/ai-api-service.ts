@@ -60,6 +60,11 @@ export const OPENAI_MODELS: Record<string, AIModel> = {
   },
 };
 
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 // Factory function to create the appropriate AI service
 export const createAIService = (): BaseAIService | null => {
   const provider = BaseAIService.getProvider();
@@ -86,7 +91,11 @@ export abstract class BaseAIService {
     this.model = model;
   }
 
-  abstract generateContent(prompt: string, context?: string): Promise<string>;
+  abstract generateContent(
+    prompt: string,
+    context?: string,
+    conversationHistory?: ChatMessage[],
+  ): Promise<string>;
   abstract streamContent(
     prompt: string,
     context?: string,
@@ -161,10 +170,31 @@ export class OpenAIService extends BaseAIService {
     }
   }
 
-  async generateContent(prompt: string, context?: string): Promise<string> {
-    const fullPrompt = context
-      ? `Context:\n${context}\n\nQuestion: ${prompt}`
-      : prompt;
+  async generateContent(
+    prompt: string,
+    context?: string,
+    conversationHistory?: ChatMessage[],
+  ): Promise<string> {
+    const messages: ChatMessage[] = [];
+
+    // Add system message if there's context
+    if (context) {
+      messages.push({
+        role: 'system',
+        content: `You are a helpful AI assistant. Here is the context from the user's files:\n\n${context}`,
+      });
+    }
+
+    // Add conversation history if provided
+    if (conversationHistory) {
+      messages.push(...conversationHistory);
+    }
+
+    // Add the current prompt
+    messages.push({
+      role: 'user',
+      content: prompt,
+    });
 
     const modelConfig =
       OPENAI_MODELS[this.model] || OPENAI_MODELS['gpt-3.5-turbo'];
@@ -177,7 +207,7 @@ export class OpenAIService extends BaseAIService {
       },
       body: JSON.stringify({
         model: this.model,
-        messages: [{ role: 'user', content: fullPrompt }],
+        messages,
         max_tokens: modelConfig.maxTokens,
         temperature: modelConfig.temperature,
       }),
