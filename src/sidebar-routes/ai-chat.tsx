@@ -17,6 +17,7 @@ import {
   Grow,
   ClickAwayListener,
   InputAdornment,
+  useTheme,
 } from '@mui/material';
 import {
   Send,
@@ -31,6 +32,10 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   createAIService,
   BaseAIService,
@@ -43,6 +48,13 @@ import { RootState } from '../shared/store';
 import { QuickFileOpener } from '../components/quick-file-opener';
 import { getFileIcon } from '../icons/file-types';
 import { useProjectOperations } from '../shared/hooks';
+
+interface CodeProps {
+  node?: any;
+  inline?: any;
+  className?: any;
+  children?: any;
+}
 
 const ChatContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -95,11 +107,70 @@ const MessageHeader = styled(Box)(({ theme }) => ({
   opacity: 0.8,
 }));
 
-const MessageContent = styled(Typography)(({ theme }) => ({
+const MessageContent = styled(Box)(({ theme }) => ({
   fontSize: '14px',
   lineHeight: 1.4,
-  whiteSpace: 'pre-wrap',
-  wordBreak: 'break-word',
+  width: '100%',
+  overflow: 'hidden',
+  '& p': {
+    margin: '0.5em 0',
+    wordBreak: 'break-word',
+  },
+  '& pre': {
+    margin: '0.5em 0',
+    maxWidth: '100%',
+    '& > div': {
+      margin: 0,
+      borderRadius: theme.spacing(0.5),
+    },
+  },
+  '& code': {
+    backgroundColor: theme.palette.background.default,
+    padding: '0.2em 0.4em',
+    borderRadius: theme.spacing(0.5),
+    fontSize: '0.9em',
+    wordBreak: 'break-word',
+  },
+  '& pre code': {
+    backgroundColor: 'transparent',
+    padding: 0,
+  },
+  '& ul, & ol': {
+    margin: '0.5em 0',
+    paddingLeft: theme.spacing(2),
+    wordBreak: 'break-word',
+  },
+  '& li': {
+    margin: '0.25em 0',
+  },
+  '& blockquote': {
+    borderLeft: `4px solid ${theme.palette.divider}`,
+    margin: '0.5em 0',
+    padding: '0.5em 0 0.5em 1em',
+    color: theme.palette.text.secondary,
+    wordBreak: 'break-word',
+  },
+  '& table': {
+    borderCollapse: 'collapse',
+    width: '100%',
+    margin: '0.5em 0',
+    tableLayout: 'fixed',
+  },
+  '& th, & td': {
+    border: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(0.5),
+    wordBreak: 'break-word',
+  },
+  '& th': {
+    backgroundColor: theme.palette.background.default,
+  },
+  '& img': {
+    maxWidth: '100%',
+    height: 'auto',
+  },
+  '& a': {
+    wordBreak: 'break-all',
+  },
 }));
 
 const InputContainer = styled(Box)(({ theme }) => ({
@@ -643,7 +714,36 @@ export const AiChatSection = memo(() => {
                   })}
                 </Typography>
               </MessageHeader>
-              <MessageContent>{message.content}</MessageContent>
+              <MessageContent>
+                {message.isUser ? (
+                  <Typography>{message.content}</Typography>
+                ) : (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ className, children, ...props }: CodeProps) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const language = match ? match[1] : '';
+                        const code = String(children).replace(/\n$/, '');
+
+                        return match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus}
+                            language={language}
+                            PreTag="div">
+                            {code}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}>
+                    {message.content}
+                  </ReactMarkdown>
+                )}
+              </MessageContent>
             </MessageBubble>
           ))
         )}
