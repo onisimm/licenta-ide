@@ -374,10 +374,17 @@ export const AiChatSection = memo(() => {
           <MenuItem
             key={model.id}
             onClick={() => handleModelSelect(model.id)}
-            selected={model.id === currentModel}>
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="body2">{model.name}</Typography>
-              <Typography variant="caption" color="text.secondary">
+            selected={model.id === currentModel}
+            sx={{ whiteSpace: 'normal', py: 1 }}>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+              <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+                {model.name}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ wordBreak: 'break-word' }}>
                 {model.description}
               </Typography>
             </Box>
