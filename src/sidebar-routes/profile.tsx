@@ -22,7 +22,7 @@ import {
   Delete,
   Check,
 } from '@mui/icons-material';
-import { AIService, AIProvider } from '../services/gemini-api';
+import { BaseAIService, AIProvider } from '../services/ai-api-service';
 
 const ProfileContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -72,13 +72,11 @@ interface ProviderStatus {
 
 export const ProfileSection = memo(() => {
   const [selectedProvider, setSelectedProvider] =
-    useState<AIProvider>('gemini');
+    useState<AIProvider>('openai');
   const [apiKeys, setApiKeys] = useState<Record<AIProvider, string>>({
-    gemini: '',
     openai: '',
   });
   const [showApiKeys, setShowApiKeys] = useState<Record<AIProvider, boolean>>({
-    gemini: false,
     openai: false,
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -89,7 +87,6 @@ export const ProfileSection = memo(() => {
   const [providerStatus, setProviderStatus] = useState<
     Record<AIProvider, ProviderStatus>
   >({
-    gemini: { hasKey: false },
     openai: { hasKey: false },
   });
 
@@ -98,16 +95,16 @@ export const ProfileSection = memo(() => {
     const loadSettings = () => {
       try {
         // Load provider selection
-        const savedProvider = AIService.getProvider();
+        const savedProvider = BaseAIService.getProvider();
         setSelectedProvider(savedProvider);
 
         // Load API keys and check status
-        const providers: AIProvider[] = ['gemini', 'openai'];
+        const providers: AIProvider[] = ['openai'];
         const newApiKeys = { ...apiKeys };
         const newStatus = { ...providerStatus };
 
         providers.forEach(provider => {
-          const stored = AIService.getApiKey(provider);
+          const stored = BaseAIService.getApiKey(provider);
           if (stored) {
             newApiKeys[provider] = stored;
             newStatus[provider] = { hasKey: true, isValid: true };
@@ -126,13 +123,6 @@ export const ProfileSection = memo(() => {
 
   const getProviderInfo = (provider: AIProvider) => {
     switch (provider) {
-      case 'gemini':
-        return {
-          name: 'Google Gemini',
-          keyFormat: 'AIza...',
-          getKeyUrl: 'https://aistudio.google.com/app/apikey',
-          keyLength: 35,
-        };
       case 'openai':
         return {
           name: 'OpenAI',
@@ -150,8 +140,6 @@ export const ProfileSection = memo(() => {
     if (!info) return false;
 
     switch (provider) {
-      case 'gemini':
-        return key.startsWith('AIza') && key.length >= info.keyLength;
       case 'openai':
         return key.startsWith('sk-') && key.length >= info.keyLength;
       default:
@@ -179,7 +167,7 @@ export const ProfileSection = memo(() => {
 
       setIsLoading(true);
       try {
-        const isValid = await AIService.validateApiKey(provider, apiKey);
+        const isValid = await BaseAIService.validateApiKey(provider, apiKey);
 
         if (isValid) {
           localStorage.setItem(`${provider}-api-key`, apiKey);
@@ -235,7 +223,7 @@ export const ProfileSection = memo(() => {
 
   const handleProviderChange = useCallback((provider: AIProvider) => {
     setSelectedProvider(provider);
-    AIService.setProvider(provider);
+    BaseAIService.setProvider(provider);
     setMessage({
       type: 'success',
       text: `Switched to ${getProviderInfo(provider)?.name}`,
@@ -250,7 +238,10 @@ export const ProfileSection = memo(() => {
     setMessage(null);
   }, []);
 
-  const renderProviderField = (provider: AIProvider) => {
+  const renderProviderField = (
+    provider: AIProvider,
+    renderBudgetMessage: boolean = false,
+  ) => {
     const info = getProviderInfo(provider);
     const status = providerStatus[provider];
 
@@ -306,6 +297,12 @@ export const ProfileSection = memo(() => {
           </a>
         </Typography>
 
+        {renderBudgetMessage && (
+          <Typography variant="caption" color="text.secondary">
+            Make sure you have enough credits to use the API.
+          </Typography>
+        )}
+
         <ButtonGroup>
           <Button
             variant="contained"
@@ -355,12 +352,6 @@ export const ProfileSection = memo(() => {
               value={selectedProvider}
               onChange={e => handleProviderChange(e.target.value as AIProvider)}
               label="Select AI Provider">
-              <MenuItem value="gemini">
-                Google Gemini{' '}
-                {providerStatus.gemini.hasKey &&
-                  providerStatus.gemini.isValid &&
-                  '✓'}
-              </MenuItem>
               <MenuItem value="openai">
                 OpenAI{' '}
                 {providerStatus.openai.hasKey &&
@@ -378,8 +369,7 @@ export const ProfileSection = memo(() => {
       <ProfilePanel elevation={1}>
         <SectionTitle>API Keys Configuration</SectionTitle>
 
-        {renderProviderField('gemini')}
-        {renderProviderField('openai')}
+        {renderProviderField('openai', true)}
       </ProfilePanel>
 
       <ProfilePanel elevation={1}>
@@ -394,9 +384,6 @@ export const ProfileSection = memo(() => {
           analysis of your project files using your chosen AI provider.
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          <strong>Gemini:</strong> Free tier available, good for general coding
-          help
-          <br />
           <strong>OpenAI:</strong> Requires paid account, excellent for complex
           reasoning
         </Typography>

@@ -56,6 +56,14 @@ interface IMainStateWithPersistence extends IMainState {
   searchState: SearchState;
   sidebarState: SidebarState;
   appState: AppState;
+  chatState: {
+    messages: Array<{
+      id: string;
+      content: string;
+      isUser: boolean;
+      timestamp: Date;
+    }>;
+  };
 }
 
 // Define the initial state using that type
@@ -80,6 +88,9 @@ const initialState: IMainStateWithPersistence = {
   },
   appState: {
     title: 'SEditor',
+  },
+  chatState: {
+    messages: [],
   },
 };
 
@@ -444,6 +455,21 @@ export const mainSlice = createSlice({
     setAppTitle: (state, action: PayloadAction<string>) => {
       state.appState.title = action.payload;
     },
+    // Add new chat-related reducers
+    addChatMessage: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        content: string;
+        isUser: boolean;
+        timestamp: Date;
+      }>,
+    ) => {
+      state.chatState.messages.push(action.payload);
+    },
+    clearChatMessages: state => {
+      state.chatState.messages = [];
+    },
   },
 });
 
@@ -477,6 +503,8 @@ export const {
   removeTreeItem,
   renameTreeItem,
   setAppTitle,
+  addChatMessage,
+  clearChatMessages,
 } = mainSlice.actions;
 
 // Export types for use in components

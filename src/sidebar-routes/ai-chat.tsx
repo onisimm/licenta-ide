@@ -17,9 +17,17 @@ import {
   SmartToy,
   Settings,
   AttachFile,
+  Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { createAIService, AIService, AIProvider } from '../services/gemini-api';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  createAIService,
+  BaseAIService,
+  AIProvider,
+} from '../services/ai-api-service';
+import { addChatMessage, clearChatMessages } from '../shared/rdx-slice';
+import { RootState } from '../shared/store';
 
 const ChatContainer = styled(Box)(({ theme }) => ({
   height: '100%',
@@ -121,11 +129,14 @@ interface DocumentContext {
 
 export const AiChatSection = memo(() => {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const dispatch = useDispatch();
+  const messages = useSelector(
+    (state: RootState) => state.main.chatState.messages,
+  );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [aiService, setAiService] = useState<any>(null);
-  const [currentProvider, setCurrentProvider] = useState<AIProvider>('gemini');
+  const [currentProvider, setCurrentProvider] = useState<AIProvider>('openai');
   const [documentContext, setDocumentContext] = useState<DocumentContext[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -133,7 +144,7 @@ export const AiChatSection = memo(() => {
   useEffect(() => {
     const checkAIService = () => {
       const service = createAIService();
-      const provider = AIService.getProvider();
+      const provider = BaseAIService.getProvider();
       setAiService(service);
       setCurrentProvider(provider);
     };
@@ -154,15 +165,22 @@ export const AiChatSection = memo(() => {
     navigate('/main_window/profile');
   }, [navigate]);
 
-  const addMessage = useCallback((content: string, isUser: boolean) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      isUser,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, newMessage]);
-  }, []);
+  const addMessage = useCallback(
+    (content: string, isUser: boolean) => {
+      const newMessage = {
+        id: Date.now().toString(),
+        content,
+        isUser,
+        timestamp: new Date(),
+      };
+      dispatch(addChatMessage(newMessage));
+    },
+    [dispatch],
+  );
+
+  const handleResetChat = useCallback(() => {
+    dispatch(clearChatMessages());
+  }, [dispatch]);
 
   const callAIAPI = useCallback(async (prompt: string, context?: string) => {
     const service = createAIService();
@@ -238,16 +256,7 @@ export const AiChatSection = memo(() => {
     );
   }, []);
 
-  const getProviderDisplayName = (provider: AIProvider): string => {
-    switch (provider) {
-      case 'gemini':
-        return 'Google Gemini';
-      case 'openai':
-        return 'OpenAI';
-      default:
-        return 'AI';
-    }
-  };
+  const providerDisplayName = 'OpenAI';
 
   // If no AI service, show setup message
   if (!aiService) {
@@ -255,7 +264,7 @@ export const AiChatSection = memo(() => {
       <ChatContainer>
         <ChatHeader>
           <Typography variant="h6" sx={{ fontSize: '16px' }}>
-            AI Chat
+            Ask AI
           </Typography>
         </ChatHeader>
         <EmptyState>
@@ -264,8 +273,8 @@ export const AiChatSection = memo(() => {
             AI Chat Setup Required
           </Typography>
           <Typography variant="body2" sx={{ mb: 2, maxWidth: 300 }}>
-            To use AI chat, you need to configure an API key for either Google
-            Gemini or OpenAI in the profile section.
+            To use AI chat, you need to configure an API key for OpenAI in the
+            profile section.
           </Typography>
           <Button
             variant="contained"
@@ -286,12 +295,25 @@ export const AiChatSection = memo(() => {
             AI Chat
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Using {getProviderDisplayName(currentProvider)}
+            Using {providerDisplayName}
           </Typography>
         </Box>
-        <IconButton size="small" onClick={handleGoToProfile} title="Settings">
-          <Settings />
-        </IconButton>
+        <Box>
+          <IconButton
+            size="small"
+            onClick={handleResetChat}
+            title="Reset Chat"
+            sx={{ mr: 1, color: 'text.secondary' }}>
+            <Refresh />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={handleGoToProfile}
+            title="Settings"
+            sx={{ color: 'text.secondary' }}>
+            <Settings />
+          </IconButton>
+        </Box>
       </ChatHeader>
 
       {documentContext.length > 0 && (
