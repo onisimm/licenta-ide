@@ -8,6 +8,7 @@ For increased readability and ease of use:
 
 ---
 
+
 ## 1. Configure `.gitconfig` with User Details
 
 Set up the `.gitconfig` file in `%USERPROFILE%`.
