@@ -5,7 +5,7 @@ import { SearchSection } from '../sidebar-routes/search';
 import SourceSection from '../sidebar-routes/source';
 import SettingsSection from '../sidebar-routes/settings';
 import { AiChatSection } from '../sidebar-routes/ai-chat';
-import { ProfileSection } from '../sidebar-routes/profile';
+import ProfileSection from '../sidebar-routes/profile';
 
 export default createHashRouter([
   {
