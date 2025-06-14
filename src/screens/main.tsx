@@ -4,6 +4,7 @@ import ContentSection from '../sections/content';
 import SidebarSection from '../sections/sidebar';
 import { useProjectOperations } from '../shared/hooks';
 import QuickFileOpener from '../components/quick-file-opener';
+import { useAppSelector } from '../shared/hooks';
 
 const SIDEBAR_WIDTH_KEY = 'sidebar-width';
 const DEFAULT_SIDEBAR_WIDTH = 260;
@@ -38,77 +39,29 @@ const FooterContainer = styled(Box)(({ theme }) => ({
 }));
 
 const MainComponent = memo(() => {
-  const { hasFolder, folderName } = useProjectOperations();
+  const { hasFolder, folderName, openFileOrFolder } = useProjectOperations();
   const [isQuickFileOpenerOpen, setIsQuickFileOpenerOpen] = useState(false);
+  const title = useAppSelector(state => state.main.appState.title);
 
-  // Generate title based on folder state
-  const title = hasFolder && folderName ? `SEditor — ${folderName}` : 'SEditor';
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const savedWidth = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    return savedWidth ? parseInt(savedWidth, 10) : DEFAULT_SIDEBAR_WIDTH;
+  });
 
-  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Initialize sidebar width on mount
-  useEffect(() => {
-    const initializeSidebarWidth = async () => {
-      try {
-        if (window.electron?.getSidebarWidth) {
-          const stored = await window.electron.getSidebarWidth();
-          setSidebarWidth(stored);
-        } else {
-          // Fallback to localStorage
-          const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-          setSidebarWidth(saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH);
-        }
-      } catch (error) {
-        console.warn(
-          'Failed to get sidebar width from electron store, using localStorage:',
-          error,
-        );
-        try {
-          const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-          setSidebarWidth(saved ? parseInt(saved, 10) : DEFAULT_SIDEBAR_WIDTH);
-        } catch (localError) {
-          console.warn(
-            'Failed to get sidebar width from localStorage:',
-            localError,
-          );
-          setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
-        }
-      }
-      setIsInitialized(true);
-    };
-
-    initializeSidebarWidth();
+  // Handle sidebar resize
+  const handleSidebarResize = useCallback((newWidth: number) => {
+    setSidebarWidth(newWidth);
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, newWidth.toString());
   }, []);
 
-  const handleSidebarResize = useCallback(async (newWidth: number) => {
-    // Constrain width between 260px and 75% of screen width
-    const maxWidth = Math.floor(window.innerWidth * 0.75);
-    const constrainedWidth = Math.max(260, Math.min(maxWidth, newWidth));
-    setSidebarWidth(constrainedWidth);
-
+  // Handle open file or folder
+  const handleOpenFileOrFolder = useCallback(async () => {
     try {
-      if (window.electron?.setSidebarWidth) {
-        await window.electron.setSidebarWidth(constrainedWidth);
-      } else {
-        // Fallback to localStorage
-        localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
-      }
+      await openFileOrFolder();
     } catch (error) {
-      console.warn(
-        'Failed to save sidebar width to electron store, using localStorage:',
-        error,
-      );
-      try {
-        localStorage.setItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString());
-      } catch (localError) {
-        console.warn(
-          'Failed to save sidebar width to localStorage:',
-          localError,
-        );
-      }
+      console.error('Error opening file or folder:', error);
     }
-  }, []);
+  }, [openFileOrFolder]);
 
   // Handle keyboard shortcuts for quick file opener
   useEffect(() => {
@@ -120,6 +73,12 @@ const MainComponent = memo(() => {
           event.preventDefault();
           setIsQuickFileOpenerOpen(true);
         }
+      }
+
+      // Check for Cmd+O (Mac) or Ctrl+O (Windows/Linux)
+      if ((event.metaKey || event.ctrlKey) && event.key === 'o') {
+        event.preventDefault();
+        handleOpenFileOrFolder();
       }
 
       // Check for Cmd+J (Mac) or Ctrl+J (Windows/Linux) for terminal
@@ -178,7 +137,7 @@ const MainComponent = memo(() => {
         menuTerminalCleanup();
       }
     };
-  }, [hasFolder, isQuickFileOpenerOpen]);
+  }, [hasFolder, isQuickFileOpenerOpen, handleOpenFileOrFolder]);
 
   const handleCloseQuickFileOpener = useCallback(() => {
     setIsQuickFileOpenerOpen(false);
