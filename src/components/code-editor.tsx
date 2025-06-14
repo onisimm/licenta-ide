@@ -464,58 +464,33 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
         );
 
         // Configure TypeScript compiler options for better JSX/TSX support
-        if (language === 'typescript' || language === 'tsx') {
-          monacoInstance.languages.typescript.typescriptDefaults.setCompilerOptions(
-            {
-              target: monacoInstance.languages.typescript.ScriptTarget.ES2020,
-              allowNonTsExtensions: true,
-              moduleResolution:
-                monacoInstance.languages.typescript.ModuleResolutionKind.NodeJs,
-              module: monacoInstance.languages.typescript.ModuleKind.CommonJS,
-              noEmit: true,
-              esModuleInterop: true,
-              jsx: fileName.endsWith('.tsx')
-                ? monacoInstance.languages.typescript.JsxEmit.React
-                : monacoInstance.languages.typescript.JsxEmit.None,
-              reactNamespace: 'React',
-              allowJs: true,
-              typeRoots: ['node_modules/@types'],
-              strict: false, // Allow more lenient TypeScript for better editor experience
-              skipLibCheck: true, // Skip type checking of declaration files
-            },
-          );
-
-          // Configure diagnostics
-          monacoInstance.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
-            {
-              noSemanticValidation: true,
-              noSyntaxValidation: true,
-              noSuggestionDiagnostics: false,
-            },
-          );
-        }
-
-        // Configure JavaScript for JSX support
-        if (language === 'javascript' || language === 'jsx') {
-          monacoInstance.languages.typescript.javascriptDefaults.setCompilerOptions(
-            {
-              target: monacoInstance.languages.typescript.ScriptTarget.ES2020,
-              allowNonTsExtensions: true,
-              allowJs: true,
-              jsx: fileName.endsWith('.jsx')
-                ? monacoInstance.languages.typescript.JsxEmit.React
-                : monacoInstance.languages.typescript.JsxEmit.None,
-            },
-          );
-
-          monacoInstance.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
-            {
-              noSemanticValidation: true, // Disable semantic validation for JS
-              noSyntaxValidation: false,
-              noSuggestionDiagnostics: true,
-            },
-          );
-        }
+        monacoInstance.languages.typescript.typescriptDefaults.setCompilerOptions(
+          {
+            target: monacoInstance.languages.typescript.ScriptTarget.ES2020,
+            allowNonTsExtensions: true,
+            moduleResolution:
+              monacoInstance.languages.typescript.ModuleResolutionKind.NodeJs,
+            module: monacoInstance.languages.typescript.ModuleKind.CommonJS,
+            noEmit: true,
+            esModuleInterop: true,
+            jsx: fileName.endsWith('.tsx')
+              ? monacoInstance.languages.typescript.JsxEmit.React
+              : monacoInstance.languages.typescript.JsxEmit.None,
+            reactNamespace: 'React',
+            allowJs: true,
+            typeRoots: ['node_modules/@types'],
+            strict: false, // Allow more lenient TypeScript for better editor experience
+            skipLibCheck: true, // Skip type checking of declaration files
+          },
+        );
+        // Configure diagnostics
+        monacoInstance.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
+          {
+            noSemanticValidation: true,
+            noSyntaxValidation: false,
+            noSuggestionDiagnostics: false,
+          },
+        );
 
         // Configure editor options for better performance
         editor.updateOptions({
