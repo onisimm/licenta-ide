@@ -17,6 +17,8 @@ import {
   closeAllTabs,
 } from './rdx-slice';
 import { logError } from './utils';
+import { initializeGitIgnore } from './gitignore-utils';
+import { markGitIgnoredFiles } from '../components/explorer/utils';
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
@@ -56,19 +58,31 @@ export const useProjectOperations = () => {
   // Open file or folder operation
   const openFileOrFolder = useCallback(async () => {
     try {
-      const result = await window.electron.openFileOrFolder();
-
-      if (!result) {
-        return null; // User cancelled or error occurred
+      // For folders, use the openFolder method that handles gitignore
+      const folder = await window.electron.openFolder();
+      if (folder && Object.keys(folder).length > 0) {
+        try {
+          const gitIgnoreChecker = await initializeGitIgnore(folder.root);
+          console.log(
+            'GitIgnore patterns loaded:',
+            gitIgnoreChecker.getPatterns(),
+          );
+          const updatedTree = markGitIgnoredFiles(
+            folder.tree,
+            gitIgnoreChecker,
+          );
+          dispatch(setFolderStructure({ ...folder, tree: updatedTree }));
+          return { type: 'folder', data: folder };
+        } catch (error) {
+          console.warn('Failed to initialize gitignore:', error);
+          dispatch(setFolderStructure(folder));
+          return { type: 'folder', data: folder };
+        }
       }
 
-      if (result.type === 'folder') {
-        // Handle folder selection - update folder structure and clear any selected file
-        dispatch(setFolderStructure(result.folder));
-        console.log('Folder opened:', result.folder.name);
-        return { type: 'folder', data: result.folder };
-      } else if (result.type === 'file') {
-        // Handle file selection - open in tab system
+      // For files, use the existing file opening logic
+      const result = await window.electron.openFileOrFolder();
+      if (result && result.type === 'file') {
         dispatch(openFileInTab(result.file));
         console.log('File opened in tab:', result.file.name);
         return { type: 'file', data: result.file };
