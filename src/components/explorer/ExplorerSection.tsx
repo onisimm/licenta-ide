@@ -1,5 +1,9 @@
 import { memo, useEffect, useCallback, useState } from 'react';
-import { useAppSelector, useAppDispatch } from '../../shared/hooks';
+import {
+  useAppSelector,
+  useAppDispatch,
+  useProjectOperations,
+} from '../../shared/hooks';
 import {
   setFolderStructure,
   updateTreeItem,
@@ -41,31 +45,16 @@ export const ExplorerSection = memo(() => {
     value: '',
   });
 
+  const { openFolderOnly } = useProjectOperations();
+
   const openFolder = useCallback(async () => {
     try {
-      const folder: IFolderStructure = await window.electron.openFolder();
-      if (folder && Object.keys(folder).length > 0) {
-        try {
-          const gitIgnoreChecker = await initializeGitIgnore(folder.root);
-          console.log(
-            'GitIgnore patterns loaded:',
-            gitIgnoreChecker.getPatterns(),
-          );
-          const updatedTree = markGitIgnoredFiles(
-            folder.tree,
-            gitIgnoreChecker,
-          );
-          dispatch(setFolderStructure({ ...folder, tree: updatedTree }));
-        } catch (error) {
-          console.warn('Failed to initialize gitignore:', error);
-          dispatch(setFolderStructure(folder));
-        }
-        dispatch(setExplorerExpanded(true));
-      }
+      await openFolderOnly();
+      dispatch(setExplorerExpanded(true));
     } catch (error) {
       console.error('Error opening folder:', error);
     }
-  }, [dispatch]);
+  }, [openFolderOnly, dispatch]);
 
   useEffect(() => {
     const unsubscribeOpen = window.electron?.onMenuOpenFile?.(openFolder);

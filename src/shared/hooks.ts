@@ -58,7 +58,56 @@ export const useProjectOperations = () => {
   // Open file or folder operation
   const openFileOrFolder = useCallback(async () => {
     try {
-      // For folders, use the openFolder method that handles gitignore
+      const result = await window.electron.openFileOrFolder();
+
+      if (!result) {
+        return null; // User cancelled or error occurred
+      }
+
+      if (result.type === 'folder') {
+        // Handle folder selection with gitignore support
+        try {
+          const gitIgnoreChecker = await initializeGitIgnore(
+            result.folder.root,
+          );
+          console.log(
+            'GitIgnore patterns loaded:',
+            gitIgnoreChecker.getPatterns(),
+          );
+          const updatedTree = markGitIgnoredFiles(
+            result.folder.tree,
+            gitIgnoreChecker,
+          );
+          dispatch(setFolderStructure({ ...result.folder, tree: updatedTree }));
+          console.log('Folder opened with gitignore:', result.folder.name);
+          return {
+            type: 'folder',
+            data: { ...result.folder, tree: updatedTree },
+          };
+        } catch (error) {
+          console.warn('Failed to initialize gitignore:', error);
+          dispatch(setFolderStructure(result.folder));
+          console.log('Folder opened without gitignore:', result.folder.name);
+          return { type: 'folder', data: result.folder };
+        }
+      } else if (result.type === 'file') {
+        // Handle file selection - open in tab system
+        dispatch(openFileInTab(result.file));
+        console.log('File opened in tab:', result.file.name);
+        return { type: 'file', data: result.file };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error opening file or folder:', error);
+      logError('Open File/Folder', error);
+      throw error;
+    }
+  }, [dispatch]);
+
+  // Open folder only operation (for Explorer)
+  const openFolderOnly = useCallback(async () => {
+    try {
       const folder = await window.electron.openFolder();
       if (folder && Object.keys(folder).length > 0) {
         try {
@@ -72,26 +121,17 @@ export const useProjectOperations = () => {
             gitIgnoreChecker,
           );
           dispatch(setFolderStructure({ ...folder, tree: updatedTree }));
-          return { type: 'folder', data: folder };
+          return { type: 'folder', data: { ...folder, tree: updatedTree } };
         } catch (error) {
           console.warn('Failed to initialize gitignore:', error);
           dispatch(setFolderStructure(folder));
           return { type: 'folder', data: folder };
         }
       }
-
-      // For files, use the existing file opening logic
-      const result = await window.electron.openFileOrFolder();
-      if (result && result.type === 'file') {
-        dispatch(openFileInTab(result.file));
-        console.log('File opened in tab:', result.file.name);
-        return { type: 'file', data: result.file };
-      }
-
       return null;
     } catch (error) {
-      console.error('Error opening file or folder:', error);
-      logError('Open File/Folder', error);
+      console.error('Error opening folder:', error);
+      logError('Open Folder', error);
       throw error;
     }
   }, [dispatch]);
@@ -344,6 +384,7 @@ export const useProjectOperations = () => {
   return {
     // Operations
     openFileOrFolder,
+    openFolderOnly,
     saveFile,
     closeFile,
     closeFolder,
