@@ -52,6 +52,12 @@ export const Search: React.FC<SearchProps> = ({
 
   const latestSearchIdRef = useRef(0);
   const previousResultsRef = useRef<Set<string>>(new Set());
+  const expandedFilesRef = useRef<string[]>([]);
+
+  // Keep expandedFilesRef in sync with Redux state
+  useEffect(() => {
+    expandedFilesRef.current = expandedFiles;
+  }, [expandedFiles]);
 
   useEffect(() => {
     if (searchResults) {
@@ -130,12 +136,20 @@ export const Search: React.FC<SearchProps> = ({
         displayedResults.map(result => result.filePath),
       );
 
+      // For new search results, expand all files by default
+      // Only add files that aren't already tracked (completely new results)
       const newFilePaths = Array.from(currentPaths).filter(
         path => !previousResultsRef.current.has(path),
       );
 
       if (newFilePaths.length > 0) {
-        dispatch(setSearchExpandedFiles([...expandedFiles, ...newFilePaths]));
+        // Auto-expand only the new files from this search
+        dispatch(
+          setSearchExpandedFiles([
+            ...expandedFilesRef.current,
+            ...newFilePaths,
+          ]),
+        );
       }
 
       previousResultsRef.current = currentPaths;
@@ -193,11 +207,14 @@ export const Search: React.FC<SearchProps> = ({
       setCurrentSearchId(newSearchId);
       latestSearchIdRef.current = newSearchId;
 
+      // Reset expanded files state for new search
+      dispatch(setSearchExpandedFiles([]));
+      previousResultsRef.current = new Set();
+
       if (!query.trim()) {
         dispatch(setSearchResults(null));
         dispatch(setSearchError(null));
         dispatch(setSearchLoading(false));
-        dispatch(setSearchExpandedFiles([]));
         return;
       }
 
