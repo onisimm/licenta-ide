@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, Collapse } from '@mui/material';
 import { getFileIcon } from '../../icons/file-types';
 import {
   FileItemContainer,
@@ -30,15 +30,18 @@ export const FileResult: React.FC<FileResultProps> = ({
         </MatchCount>
       </FileItemContainer>
 
-      {isExpanded &&
-        fileResult.matches.map((match, index) => (
-          <LineResult
-            key={`${fileResult.filePath}-${match.lineNumber}-${index}`}
-            match={match}
-            searchQuery={searchQuery}
-            onClick={() => onLineClick(match.lineNumber)}
-          />
-        ))}
+      <Collapse in={isExpanded}>
+        <Box>
+          {fileResult.matches.map((match, index) => (
+            <LineResult
+              key={`${fileResult.filePath}-${match.lineNumber}-${index}`}
+              match={match}
+              searchQuery={searchQuery}
+              onClick={() => onLineClick(match.lineNumber)}
+            />
+          ))}
+        </Box>
+      </Collapse>
     </Box>
   );
 };
