@@ -44,6 +44,14 @@ export const FileListContainer = styled(Box)(({ theme }) => ({
   flex: 1,
   overflow: 'auto',
   marginBottom: theme.spacing(1),
+  minHeight: 0,
+}));
+
+export const ScrollableFileArea = styled(Box)(({ theme }) => ({
+  flex: 1,
+  overflow: 'auto',
+  minHeight: 0,
+  marginBottom: theme.spacing(1),
 }));
 
 export const FileItem = styled(Box)(({ theme }) => ({
@@ -78,7 +86,8 @@ export const StatusChip = styled(Chip)(({ theme }) => ({
 export const CommitSection = styled(Box)(({ theme }) => ({
   borderTop: `1px solid ${theme.palette.divider}`,
   paddingTop: theme.spacing(1),
-  marginTop: theme.spacing(1),
+  marginTop: 'auto',
+  flexShrink: 0,
 }));
 
 export const CommitInput = styled(TextField)(({ theme }) => ({

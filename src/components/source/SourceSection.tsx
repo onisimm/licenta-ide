@@ -18,6 +18,7 @@ import {
   EmptyState,
   NoFolderMessage,
   LoadingContainer,
+  ScrollableFileArea,
 } from './styles';
 import {
   GitStatus,
@@ -401,54 +402,56 @@ export const SourceSection = memo(() => {
         )}
       </ActionButtonsContainer>
 
-      {/* File Lists */}
-      {(stagedFiles.length > 0 || unstagedFiles.length > 0) && (
+      {/* Scrollable File Lists Area */}
+      {stagedFiles.length > 0 || unstagedFiles.length > 0 ? (
         <>
-          <FileList
-            title="Changes"
-            files={unstagedFiles}
-            expanded={expandedSections.changes}
-            onToggle={() => toggleSection('changes')}
-            onStageFile={handleStageFile}
-            onDiscardFile={handleDiscardClick}
-            onStageAll={handleStageAll}
-            onFileClick={handleFileClick}
-          />
-          {stagedFiles.length > 0 && (
+          <ScrollableFileArea>
             <FileList
-              title="Staged Changes"
-              files={stagedFiles}
-              expanded={expandedSections.staged}
-              onToggle={() => toggleSection('staged')}
+              title="Changes"
+              files={unstagedFiles}
+              expanded={expandedSections.changes}
+              onToggle={() => toggleSection('changes')}
               onStageFile={handleStageFile}
               onDiscardFile={handleDiscardClick}
-              onUnstageAll={handleUnstageAll}
+              onStageAll={handleStageAll}
               onFileClick={handleFileClick}
+            />
+            {stagedFiles.length > 0 && (
+              <FileList
+                title="Staged Changes"
+                files={stagedFiles}
+                expanded={expandedSections.staged}
+                onToggle={() => toggleSection('staged')}
+                onStageFile={handleStageFile}
+                onDiscardFile={handleDiscardClick}
+                onUnstageAll={handleUnstageAll}
+                onFileClick={handleFileClick}
+              />
+            )}
+          </ScrollableFileArea>
+
+          {/* Commit Section - Always at bottom when there are staged files */}
+          {stagedFiles.length > 0 && (
+            <CommitSection
+              commitMessage={commitMessage}
+              onCommitMessageChange={setCommitMessage}
+              onCommit={handleCommit}
             />
           )}
         </>
-      )}
-
-      {/* Clean repository message */}
-      {gitStatus.isClean && (
-        <EmptyState>
-          <CheckCircleIcon sx={{ fontSize: 32, opacity: 0.5 }} />
-          <Typography variant="body2" color="text.secondary">
-            No changes detected
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Your working tree is clean
-          </Typography>
-        </EmptyState>
-      )}
-
-      {/* Commit Section */}
-      {stagedFiles.length > 0 && (
-        <CommitSection
-          commitMessage={commitMessage}
-          onCommitMessageChange={setCommitMessage}
-          onCommit={handleCommit}
-        />
+      ) : (
+        /* Clean repository message */
+        gitStatus.isClean && (
+          <EmptyState>
+            <CheckCircleIcon sx={{ fontSize: 32, opacity: 0.5 }} />
+            <Typography variant="body2" color="text.secondary">
+              No changes detected
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Your working tree is clean
+            </Typography>
+          </EmptyState>
+        )
       )}
 
       {/* Dialogs */}
