@@ -7,6 +7,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useAppSelector } from '../../shared/hooks';
+import { useProjectOperations } from '../../shared/hooks';
 import { BranchInfo } from './BranchInfo';
 import { FileList } from './FileList';
 import { CommitSection } from './CommitSection';
@@ -52,6 +53,9 @@ export const SourceSection = memo(() => {
   const folderStructure = useAppSelector(state => state.main.folderStructure);
   const hasFolder = folderStructure && Object.keys(folderStructure).length > 0;
   const folderPath = folderStructure?.root;
+
+  // Get project operations for opening files
+  const { openFileAtLineWithOptions } = useProjectOperations();
 
   // Load Git status
   const loadGitStatus = useCallback(async () => {
@@ -288,6 +292,31 @@ export const SourceSection = memo(() => {
     [folderPath, loadGitStatus],
   );
 
+  // Handle file click to open in editor
+  const handleFileClick = useCallback(
+    async (file: GitFileStatus) => {
+      if (!folderPath) return;
+
+      try {
+        // Construct full file path
+        const fullPath =
+          folderPath.endsWith('/') || folderPath.endsWith('\\')
+            ? folderPath + file.path
+            : folderPath + '/' + file.path;
+
+        // Open file in editor at line 1, with read-only for staged files
+        await openFileAtLineWithOptions(fullPath, 1, { readOnly: file.staged });
+
+        console.log(
+          `Opened file: ${file.path} (staged: ${file.staged}, readOnly: ${file.staged})`,
+        );
+      } catch (error) {
+        console.error('Error opening file:', error);
+      }
+    },
+    [folderPath, openFileAtLineWithOptions],
+  );
+
   // No folder opened
   if (!hasFolder) {
     return (
@@ -383,6 +412,7 @@ export const SourceSection = memo(() => {
             onStageFile={handleStageFile}
             onDiscardFile={handleDiscardClick}
             onStageAll={handleStageAll}
+            onFileClick={handleFileClick}
           />
           {stagedFiles.length > 0 && (
             <FileList
@@ -393,6 +423,7 @@ export const SourceSection = memo(() => {
               onStageFile={handleStageFile}
               onDiscardFile={handleDiscardClick}
               onUnstageAll={handleUnstageAll}
+              onFileClick={handleFileClick}
             />
           )}
         </>

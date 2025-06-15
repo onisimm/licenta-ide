@@ -82,8 +82,8 @@ const ContentSection = memo(() => {
   // Use active file for Monaco editor, fallback to selectedFile for compatibility
   const currentFile = activeFile || selectedFile;
 
-  // Files should always be editable unless there's a specific reason not to
-  const shouldBeReadOnly = false;
+  // Check if file should be read-only (from tab readOnly flag)
+  const shouldBeReadOnly = activeFile?.readOnly || false;
 
   // Handle open file/folder using the centralized hook
   const handleOpenFolder = useCallback(async () => {

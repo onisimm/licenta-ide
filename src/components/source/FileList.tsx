@@ -29,6 +29,7 @@ interface FileListProps {
   onDiscardFile: (file: GitFileStatus) => void;
   onStageAll?: () => void;
   onUnstageAll?: () => void;
+  onFileClick?: (file: GitFileStatus) => void;
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -40,6 +41,7 @@ export const FileList: React.FC<FileListProps> = ({
   onDiscardFile,
   onStageAll,
   onUnstageAll,
+  onFileClick,
 }) => {
   return (
     <>
@@ -87,7 +89,9 @@ export const FileList: React.FC<FileListProps> = ({
                 color={getStatusColor(file.status, file.staged)}
                 variant={file.staged ? 'filled' : 'outlined'}
               />
-              <FileName>{file.path}</FileName>
+              <FileName onClick={() => onFileClick?.(file)}>
+                {file.path}
+              </FileName>
               <SourceTooltip
                 title={`${file.staged ? 'Unstage' : 'Stage'} "${file.path}"`}>
                 <SuccessIconButton

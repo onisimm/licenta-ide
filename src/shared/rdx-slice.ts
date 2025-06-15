@@ -193,6 +193,39 @@ export const mainSlice = createSlice({
       state.isLoadingFile = false;
     },
 
+    openFileInTabWithOptions: (
+      state,
+      action: PayloadAction<{ file: ISelectedFile; readOnly?: boolean }>,
+    ) => {
+      const { file: fileToOpen, readOnly = false } = action.payload;
+
+      // Check if file is already open
+      const existingIndex = state.openFiles.findIndex(
+        f => f.path === fileToOpen.path,
+      );
+
+      if (existingIndex >= 0) {
+        // File already open, update read-only status and switch to it
+        state.openFiles[existingIndex].readOnly = readOnly;
+        state.activeFileIndex = existingIndex;
+        state.selectedFile = state.openFiles[existingIndex];
+      } else {
+        // Add new file to tabs
+        const newOpenFile: IOpenFile = {
+          ...fileToOpen,
+          hasUnsavedChanges: false,
+          originalContent: fileToOpen.content,
+          readOnly,
+        };
+
+        state.openFiles.push(newOpenFile);
+        state.activeFileIndex = state.openFiles.length - 1;
+        state.selectedFile = newOpenFile;
+      }
+
+      state.isLoadingFile = false;
+    },
+
     switchToTab: (state, action: PayloadAction<number>) => {
       const index = action.payload;
       if (index >= 0 && index < state.openFiles.length) {
@@ -487,6 +520,7 @@ export const {
   clearFolderStructure,
   // New tab actions
   openFileInTab,
+  openFileInTabWithOptions,
   switchToTab,
   closeTab,
   updateActiveFileContent,

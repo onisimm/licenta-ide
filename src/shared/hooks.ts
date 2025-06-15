@@ -10,6 +10,7 @@ import {
   setAppTitle,
   // New tab actions
   openFileInTab,
+  openFileInTabWithOptions,
   switchToTab,
   closeTab,
   updateActiveFileContent,
@@ -381,6 +382,65 @@ export const useProjectOperations = () => {
     [dispatch],
   );
 
+  // Open file at specific line with options (read-only support)
+  const openFileAtLineWithOptions = useCallback(
+    async (
+      filePath: string,
+      lineNumber: number,
+      options: { readOnly?: boolean } = {},
+    ) => {
+      try {
+        console.log(
+          'Opening file at line with options:',
+          filePath,
+          'line:',
+          lineNumber,
+          'options:',
+          options,
+        );
+
+        // Read the file
+        const fileData = await window.electron.readFile(filePath);
+
+        if (fileData) {
+          // Open file in tab system with options
+          dispatch(
+            openFileInTabWithOptions({
+              file: fileData,
+              readOnly: options.readOnly,
+            }),
+          );
+
+          // Handle line positioning directly via a custom event
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent('monaco-scroll-to-line', {
+                detail: { lineNumber },
+              }),
+            );
+          }, 0);
+
+          console.log(
+            'File opened at line with options:',
+            fileData.name,
+            'line:',
+            lineNumber,
+            'readOnly:',
+            options.readOnly,
+          );
+          return { file: fileData, lineNumber, readOnly: options.readOnly };
+        }
+
+        throw new Error('Failed to read file');
+      } catch (error) {
+        console.error('Error opening file at line with options:', error);
+        logError('Open File at Line with Options', error);
+        throw error;
+      }
+    },
+    [dispatch],
+  );
+
   return {
     // Operations
     openFileOrFolder,
@@ -390,6 +450,7 @@ export const useProjectOperations = () => {
     closeFolder,
     searchInFolder,
     openFileAtLine,
+    openFileAtLineWithOptions,
 
     // State information
     hasFolder: folderStructure && Object.keys(folderStructure).length > 0,

@@ -26,6 +26,7 @@ export interface ISelectedFile {
 export interface IOpenFile extends ISelectedFile {
   hasUnsavedChanges?: boolean;
   originalContent?: string; // Store original content to track changes
+  readOnly?: boolean; // Whether the file should be read-only
 }
 
 export interface IMainState {
