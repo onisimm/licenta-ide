@@ -451,6 +451,34 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+
+  // Git diff operations
+  gitGetFileDiff: async (folderPath: string, filePath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-get-file-diff',
+        folderPath,
+        filePath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitGetFileDiff preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitGetStagedDiff: async (folderPath: string, filePath: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-get-staged-diff',
+        folderPath,
+        filePath,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitGetStagedDiff preload:', error);
+      throw normalizeError(error);
+    }
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);

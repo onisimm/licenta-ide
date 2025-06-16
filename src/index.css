@@ -1,0 +1,30 @@
+/* Git decorations for Monaco Editor */
+.git-added-line {
+  background-color: rgba(40, 167, 69, 0.1) !important;
+  border-left: 3px solid #28a745 !important;
+}
+
+.git-added-glyph {
+  background-color: #28a745 !important;
+  width: 3px !important;
+}
+
+.git-modified-line {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+  border-left: 3px solid #ffc107 !important;
+}
+
+.git-modified-glyph {
+  background-color: #ffc107 !important;
+  width: 3px !important;
+}
+
+.git-deleted-line {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+  border-left: 3px solid #dc3545 !important;
+}
+
+.git-deleted-glyph {
+  background-color: #dc3545 !important;
+  width: 3px !important;
+}

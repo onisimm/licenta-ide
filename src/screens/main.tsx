@@ -86,6 +86,16 @@ const MainComponent = memo(() => {
         event.preventDefault();
         handleOpenTerminal();
       }
+
+      // Check for Cmd+Shift+D (Mac) or Ctrl+Shift+D (Windows/Linux) for Git diff toggle
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        event.key === 'D'
+      ) {
+        event.preventDefault();
+        handleToggleGitDiff();
+      }
     };
 
     // Handle menu events from application menu
@@ -108,6 +118,13 @@ const MainComponent = memo(() => {
       } catch (error) {
         console.error('Failed to open terminal:', error);
       }
+    };
+
+    // Git diff toggle function
+    const handleToggleGitDiff = () => {
+      console.log('Global Ctrl+Shift+D triggered from main component');
+      // Dispatch a custom event that the code editor can listen to
+      window.dispatchEvent(new CustomEvent('global-toggle-git-diff'));
     };
 
     // Add global keyboard event listener

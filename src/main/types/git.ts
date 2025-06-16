@@ -18,3 +18,19 @@ export interface GitBranchInfo {
   ahead: number;
   behind: number;
 }
+
+export interface GitDiffResult {
+  filePath: string;
+  diffOutput: string;
+  originalContent: string;
+  currentContent: string;
+  hasChanges: boolean;
+}
+
+export interface GitStagedDiffResult {
+  filePath: string;
+  diffOutput: string;
+  originalContent: string;
+  stagedContent: string;
+  hasChanges: boolean;
+}

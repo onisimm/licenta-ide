@@ -318,6 +318,44 @@ export const SourceSection = memo(() => {
     [folderPath, openFileAtLineWithOptions],
   );
 
+  // Handle show diff for file
+  const handleShowDiff = useCallback(
+    async (file: GitFileStatus) => {
+      if (!folderPath) return;
+
+      try {
+        // First, open the file in the main editor
+        const fullPath =
+          folderPath.endsWith('/') || folderPath.endsWith('\\')
+            ? folderPath + file.path
+            : folderPath + '/' + file.path;
+
+        // Open file in editor at line 1, with read-only for staged files
+        await openFileAtLineWithOptions(fullPath, 1, { readOnly: file.staged });
+
+        // Then trigger diff view in the editor after a small delay
+        // to ensure the file is fully loaded
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('show-git-diff', {
+              detail: {
+                filePath: file.path,
+                showStaged: file.staged,
+              },
+            }),
+          );
+        }, 100);
+
+        console.log(
+          `Opened file with diff view: ${file.path} (staged: ${file.staged})`,
+        );
+      } catch (error) {
+        console.error('Error opening file with diff:', error);
+      }
+    },
+    [folderPath, openFileAtLineWithOptions],
+  );
+
   // No folder opened
   if (!hasFolder) {
     return (
@@ -415,6 +453,7 @@ export const SourceSection = memo(() => {
               onDiscardFile={handleDiscardClick}
               onStageAll={handleStageAll}
               onFileClick={handleFileClick}
+              onShowDiff={handleShowDiff}
             />
             {stagedFiles.length > 0 && (
               <FileList
@@ -426,6 +465,7 @@ export const SourceSection = memo(() => {
                 onDiscardFile={handleDiscardClick}
                 onUnstageAll={handleUnstageAll}
                 onFileClick={handleFileClick}
+                onShowDiff={handleShowDiff}
               />
             )}
           </ScrollableFileArea>

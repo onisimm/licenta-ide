@@ -6,6 +6,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Undo as UndoIcon,
+  CompareArrows as DiffIcon,
 } from '@mui/icons-material';
 import { GitFileStatus } from './types';
 import {
@@ -30,6 +31,7 @@ interface FileListProps {
   onStageAll?: () => void;
   onUnstageAll?: () => void;
   onFileClick?: (file: GitFileStatus) => void;
+  onShowDiff?: (file: GitFileStatus) => void;
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -42,6 +44,7 @@ export const FileList: React.FC<FileListProps> = ({
   onStageAll,
   onUnstageAll,
   onFileClick,
+  onShowDiff,
 }) => {
   return (
     <>
@@ -92,6 +95,19 @@ export const FileList: React.FC<FileListProps> = ({
               <FileName onClick={() => onFileClick?.(file)}>
                 {file.path}
               </FileName>
+              {onShowDiff &&
+                (file.status === 'modified' ||
+                  file.status === 'deleted' ||
+                  file.status === 'renamed') && (
+                  <SourceTooltip title={`Show diff for "${file.path}"`}>
+                    <SuccessIconButton
+                      size="small"
+                      onClick={() => onShowDiff(file)}
+                      sx={{ color: 'info.main' }}>
+                      <DiffIcon sx={{ fontSize: 14 }} />
+                    </SuccessIconButton>
+                  </SourceTooltip>
+                )}
               <SourceTooltip
                 title={`${file.staged ? 'Unstage' : 'Stage'} "${file.path}"`}>
                 <SuccessIconButton

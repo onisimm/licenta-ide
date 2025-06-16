@@ -10,11 +10,16 @@ import {
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { logError, normalizeError } from '../shared/utils';
-import { useProjectOperations, useAppDispatch } from '../shared/hooks';
+import {
+  useProjectOperations,
+  useAppDispatch,
+  useAppSelector,
+} from '../shared/hooks';
 import { updateActiveFileContent } from '../shared/rdx-slice';
 import loader from '@monaco-editor/loader';
 import { getMonacoLanguage } from '../constants/languages';
 import { useThemeToggle } from '../theme/themeProvider';
+import { MonacoDiffEditor } from './monaco-diff-editor';
 
 loader.config({ monaco });
 
@@ -54,22 +59,6 @@ const SaveIndicator = styled(Box, {
   boxShadow: theme.shadows[2],
 }));
 
-const EditorHeader = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1, 2),
-  backgroundColor: theme.palette.background.paper,
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  display: 'flex',
-  alignItems: 'center',
-  minHeight: 40,
-}));
-
-const FileName = styled(Typography)(({ theme }) => ({
-  fontSize: '13px',
-  fontWeight: 500,
-  color: theme.palette.text.primary,
-  fontFamily: 'monospace',
-}));
-
 const EditorWrapper = styled(Box)(({ theme }) => ({
   flex: 1,
   overflow: 'hidden',
@@ -99,6 +88,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     const [hasError, setHasError] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
+    const [showDiff, setShowDiff] = useState(false);
+    const [hasGitChanges, setHasGitChanges] = useState(false);
     const theme = useTheme();
     const { isDarkMode, currentTheme, isInitialized } = useThemeToggle();
 
@@ -113,11 +104,108 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
     } = useProjectOperations();
     const dispatch = useAppDispatch();
 
+    // Get folder path for Git diff functionality
+    const folderPath = useAppSelector(state => state.main.folderStructure.root);
+
     // Track if this is an empty/placeholder state
     const isEmpty = !activeFile && !selectedFile;
 
     // Get the current file to work with (prefer activeFile from tabs)
     const currentFile = activeFile || selectedFile;
+
+    // Check if current file has Git changes and add decorations
+    const checkGitChanges = useCallback(async () => {
+      if (!folderPath || !currentFile?.path) {
+        setHasGitChanges(false);
+        return;
+      }
+
+      try {
+        // Get relative path from folder root
+        let relativePath = currentFile.path;
+        if (relativePath.startsWith(folderPath)) {
+          relativePath = relativePath
+            .replace(folderPath, '')
+            .replace(/^[\/\\]/, '');
+        }
+
+        const diffResult = await window.electron.gitGetFileDiff(
+          folderPath,
+          relativePath,
+        );
+
+        // Only consider it as having changes if there's actual diff content
+        const hasActualChanges =
+          diffResult.hasChanges && diffResult.diffOutput.trim().length > 0;
+        setHasGitChanges(hasActualChanges);
+
+        // Add Git decorations to the editor if there are changes
+        if (hasActualChanges && editorRef.current) {
+          addGitDecorations(diffResult.diffOutput);
+        } else if (editorRef.current) {
+          // Clear decorations if no changes
+          editorRef.current.deltaDecorations([], []);
+        }
+      } catch (error) {
+        // File might not be in Git or no changes
+        console.log(
+          'No Git changes detected for file:',
+          currentFile?.path,
+          error.message,
+        );
+        setHasGitChanges(false);
+        // Clear decorations on error
+        if (editorRef.current) {
+          editorRef.current.deltaDecorations([], []);
+        }
+      }
+    }, [folderPath, currentFile?.path]);
+
+    // Add Git decorations to show changed lines
+    const addGitDecorations = useCallback((diffOutput: string) => {
+      if (!editorRef.current) return;
+
+      const decorations: monaco.editor.IModelDeltaDecoration[] = [];
+      const lines = diffOutput.split('\n');
+      let currentLine = 0;
+
+      for (const line of lines) {
+        // Parse diff hunk headers like @@ -1,4 +1,6 @@
+        const hunkMatch = line.match(/^@@\s+-(\d+),?\d*\s+\+(\d+),?\d*\s+@@/);
+        if (hunkMatch) {
+          currentLine = parseInt(hunkMatch[2], 10);
+          continue;
+        }
+
+        // Skip context lines and deleted lines
+        if (line.startsWith(' ') || line.startsWith('-')) {
+          if (line.startsWith(' ')) {
+            currentLine++;
+          }
+          continue;
+        }
+
+        // Mark added lines
+        if (line.startsWith('+')) {
+          decorations.push({
+            range: new monaco.Range(currentLine, 1, currentLine, 1),
+            options: {
+              isWholeLine: true,
+              className: 'git-added-line',
+              glyphMarginClassName: 'git-added-glyph',
+              overviewRuler: {
+                color: '#28a745',
+                position: monaco.editor.OverviewRulerLane.Left,
+              },
+            },
+          });
+          currentLine++;
+        }
+      }
+
+      // Apply decorations
+      editorRef.current.deltaDecorations([], decorations);
+    }, []);
 
     // Editor content getter function
     const getEditorContent = useCallback(() => {
@@ -175,6 +263,84 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
       },
       [currentFile, dispatch, onChange, isEmpty],
     );
+
+    // Check Git changes when file changes
+    useEffect(() => {
+      checkGitChanges();
+      // Close diff view when switching files
+      if (showDiff) {
+        setShowDiff(false);
+      }
+    }, [checkGitChanges]);
+
+    // Close diff view when file no longer has changes
+    useEffect(() => {
+      if (showDiff && !hasGitChanges) {
+        setShowDiff(false);
+      }
+    }, [showDiff, hasGitChanges]);
+
+    // Listen for custom event to show Git diff from other components
+    useEffect(() => {
+      const handleShowGitDiff = (event: CustomEvent) => {
+        const { filePath, showStaged } = event.detail;
+
+        // Check if this event is for the current file
+        if (currentFile && folderPath) {
+          let relativePath = currentFile.path;
+          if (relativePath.startsWith(folderPath)) {
+            relativePath = relativePath
+              .replace(folderPath, '')
+              .replace(/^[\/\\]/, '');
+          }
+
+          // If the event is for the current file, show diff
+          if (relativePath === filePath) {
+            setShowDiff(true);
+          }
+        }
+      };
+
+      window.addEventListener(
+        'show-git-diff',
+        handleShowGitDiff as EventListener,
+      );
+
+      return () => {
+        window.removeEventListener(
+          'show-git-diff',
+          handleShowGitDiff as EventListener,
+        );
+      };
+    }, [currentFile, folderPath]);
+
+    // Listen for global Git diff toggle from main component
+    useEffect(() => {
+      const handleGlobalToggleGitDiff = () => {
+        console.log('Global Git diff toggle received in editor');
+        setShowDiff(prev => {
+          const newShowDiff = !prev;
+          console.log('Global diff toggle:', { from: prev, to: newShowDiff });
+          return newShowDiff;
+        });
+      };
+
+      window.addEventListener(
+        'global-toggle-git-diff',
+        handleGlobalToggleGitDiff,
+      );
+
+      return () => {
+        window.removeEventListener(
+          'global-toggle-git-diff',
+          handleGlobalToggleGitDiff,
+        );
+      };
+    }, []);
+
+    const handleCloseDiff = useCallback(() => {
+      setShowDiff(false);
+    }, []);
 
     // Menu event listeners and keyboard shortcuts
     useEffect(() => {
@@ -580,10 +746,35 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
             '',
           );
 
+          // Add Git diff toggle command (Ctrl+Shift+D)
+          const toggleDiffCommand = () => {
+            try {
+              console.log('Monaco toggle diff command triggered');
+              // Use a more direct approach to toggle diff
+              setShowDiff(prev => {
+                const newShowDiff = !prev;
+                console.log('Toggling diff:', { from: prev, to: newShowDiff });
+                return newShowDiff;
+              });
+            } catch (error) {
+              console.error('Error in Monaco toggle diff command:', error);
+              logError('Monaco Toggle Diff Command', error);
+            }
+          };
+
+          const toggleDiffCommandId = editor.addCommand(
+            monacoInstance.KeyMod.CtrlCmd |
+              monacoInstance.KeyMod.Shift |
+              monacoInstance.KeyCode.KeyD,
+            toggleDiffCommand,
+            '',
+          );
+
           console.log('Monaco commands registered:', {
             saveCommandId,
             closeCommandId,
             closeFolderCommandId,
+            toggleDiffCommandId,
           });
         } catch (error) {
           console.error('Failed to register Monaco commands:', error);
@@ -654,6 +845,25 @@ export const CodeEditor: React.FC<CodeEditorProps> = memo(
               <LoadingText>Initializing theme...</LoadingText>
             </LoadingContainer>
           </EditorWrapper>
+        </EditorContainer>
+      );
+    }
+
+    // If showing diff view, render the diff editor instead
+    if (showDiff && currentFile && folderPath) {
+      let relativePath = currentFile.path;
+      if (relativePath.startsWith(folderPath)) {
+        relativePath = relativePath
+          .replace(folderPath, '')
+          .replace(/^[\/\\]/, '');
+      }
+      return (
+        <EditorContainer>
+          <MonacoDiffEditor
+            filePath={relativePath}
+            onClose={handleCloseDiff}
+            showStaged={false}
+          />
         </EditorContainer>
       );
     }

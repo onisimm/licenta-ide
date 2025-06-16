@@ -2513,3 +2513,145 @@ process.on('uncaughtException', error => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection in Main Process:', reason);
 });
+
+// Get Git diff for a specific file
+ipcMain.handle(
+  'git-get-file-diff',
+  async (event, folderPath: string, filePath: string) => {
+    try {
+      console.log('🔍 Getting Git diff for file:', { folderPath, filePath });
+
+      if (!folderPath || !filePath) {
+        throw new Error('Folder path and file path are required');
+      }
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // Get the diff for the file
+      const { stdout: diffOutput } = await execAsync(
+        `git diff HEAD -- "${filePath}"`,
+        { cwd: folderPath },
+      );
+
+      // Get the original file content (HEAD version)
+      let originalContent = '';
+      try {
+        const { stdout: headContent } = await execAsync(
+          `git show HEAD:"${filePath}"`,
+          { cwd: folderPath },
+        );
+        originalContent = headContent;
+      } catch (error) {
+        // File might be new (untracked/added), so no HEAD version exists
+        console.log(
+          'No HEAD version found for file (likely new file):',
+          filePath,
+        );
+      }
+
+      // Get current file content
+      const fullFilePath = path.join(folderPath, filePath);
+      let currentContent = '';
+      try {
+        currentContent = await fs.promises.readFile(fullFilePath, 'utf8');
+      } catch (error) {
+        // File might be deleted
+        console.log('Current file not found (likely deleted):', filePath);
+      }
+
+      console.log('✅ Git diff retrieved successfully for:', filePath);
+
+      return {
+        filePath,
+        diffOutput,
+        originalContent,
+        currentContent,
+        hasChanges: diffOutput.length > 0,
+      };
+    } catch (error) {
+      console.error('❌ Error getting Git diff:', error);
+      throw new Error(
+        `Failed to get Git diff: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
+
+// Get Git diff for staged changes
+ipcMain.handle(
+  'git-get-staged-diff',
+  async (event, folderPath: string, filePath: string) => {
+    try {
+      console.log('🔍 Getting staged Git diff for file:', {
+        folderPath,
+        filePath,
+      });
+
+      if (!folderPath || !filePath) {
+        throw new Error('Folder path and file path are required');
+      }
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // Get the staged diff for the file
+      const { stdout: diffOutput } = await execAsync(
+        `git diff --cached HEAD -- "${filePath}"`,
+        { cwd: folderPath },
+      );
+
+      // Get the original file content (HEAD version)
+      let originalContent = '';
+      try {
+        const { stdout: headContent } = await execAsync(
+          `git show HEAD:"${filePath}"`,
+          { cwd: folderPath },
+        );
+        originalContent = headContent;
+      } catch (error) {
+        console.log(
+          'No HEAD version found for staged file (likely new file):',
+          filePath,
+        );
+      }
+
+      // Get staged file content
+      let stagedContent = '';
+      try {
+        const { stdout: indexContent } = await execAsync(
+          `git show :${filePath}`,
+          { cwd: folderPath },
+        );
+        stagedContent = indexContent;
+      } catch (error) {
+        console.log('No staged version found (likely deleted):', filePath);
+      }
+
+      console.log('✅ Staged Git diff retrieved successfully for:', filePath);
+
+      return {
+        filePath,
+        diffOutput,
+        originalContent,
+        stagedContent,
+        hasChanges: diffOutput.length > 0,
+      };
+    } catch (error) {
+      console.error('❌ Error getting staged Git diff:', error);
+      throw new Error(
+        `Failed to get staged Git diff: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
