@@ -1,5 +1,7 @@
 # SEditor
 
+Cursor-like IDE, with Electron, React, TypeScript & MUI.
+
 ## Overview
 
 Idea: **_Code Editor with Electron and TypeScript_**
