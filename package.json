@@ -1,7 +1,7 @@
 {
   "name": "SEditor",
   "version": "1.0.0",
-  "description": "Idea: **_Code Editor with Electron and TypeScript_**",
+  "description": "SEditor: Simple Editor",
   "main": ".webpack/main",
   "author": {
     "name": "Onisim Roman",

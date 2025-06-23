@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import Store from 'electron-store';
 import ignore from 'ignore';
-import { Worker } from 'worker_threads';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import {
@@ -1720,6 +1719,87 @@ const parseGitBranch = (
   return { current, ahead, behind };
 };
 
+// Git stash operations
+ipcMain.handle(
+  'git-stash-changes',
+  async (event, folderPath: string, message?: string) => {
+    try {
+      console.log('💾 Stashing changes:', { folderPath, message });
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // Stash changes with optional message
+      const stashMessage = message ? `-m "${message}"` : '';
+      await execAsync(`git stash push ${stashMessage}`, {
+        cwd: folderPath,
+      });
+
+      console.log('✅ Changes stashed successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error stashing changes:', error);
+      throw new Error(
+        `Failed to stash changes: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
+
+ipcMain.handle(
+  'git-stash-and-switch',
+  async (
+    event,
+    folderPath: string,
+    branchName: string,
+    stashMessage?: string,
+  ) => {
+    try {
+      console.log('💾🔄 Stashing changes and switching branch:', {
+        branchName,
+        stashMessage,
+      });
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // First stash the changes
+      const stashCmd = stashMessage
+        ? `git stash push -m "${stashMessage}"`
+        : 'git stash push';
+      await execAsync(stashCmd, {
+        cwd: folderPath,
+      });
+
+      // Then switch to the branch
+      await execAsync(`git checkout "${branchName}"`, {
+        cwd: folderPath,
+      });
+
+      console.log(
+        '✅ Successfully stashed changes and switched to branch:',
+        branchName,
+      );
+      return { success: true, branchName };
+    } catch (error) {
+      console.error('❌ Error stashing and switching branch:', error);
+      throw new Error(
+        `Failed to stash and switch branch: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
+
 // Git IPC Handlers
 ipcMain.handle('get-git-status', async (event, folderPath: string) => {
   try {
@@ -2649,6 +2729,275 @@ ipcMain.handle(
       console.error('❌ Error getting staged Git diff:', error);
       throw new Error(
         `Failed to get staged Git diff: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
+
+// Git branch operations
+ipcMain.handle('git-list-branches', async (event, folderPath: string) => {
+  try {
+    console.log('🌿 Listing Git branches for:', folderPath);
+
+    // Check if it's a Git repository
+    const isRepo = await isGitRepository(folderPath);
+    if (!isRepo) {
+      throw new Error('Not a Git repository');
+    }
+
+    // Get all branches (local and remote)
+    const { stdout: branchOutput } = await execAsync('git branch -a', {
+      cwd: folderPath,
+    });
+
+    const branches = branchOutput
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('remotes/origin/HEAD'))
+      .map(line => {
+        const isCurrent = line.startsWith('*');
+        const branchName = line.replace(/^\*\s*/, '').trim();
+        const isRemote = branchName.startsWith('remotes/origin/');
+        const localName = isRemote
+          ? branchName.replace('remotes/origin/', '')
+          : branchName;
+
+        return {
+          name: localName,
+          fullName: branchName,
+          isCurrent,
+          isRemote,
+          canCheckout: !isCurrent,
+        };
+      })
+      // Remove duplicates (local branches that also have remote tracking)
+      .filter(
+        (branch, index, self) =>
+          index === self.findIndex(b => b.name === branch.name),
+      );
+
+    console.log(`✅ Found ${branches.length} branches`);
+    return { branches };
+  } catch (error) {
+    console.error('❌ Error listing Git branches:', error);
+    throw new Error(
+      `Failed to list Git branches: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    );
+  }
+});
+
+ipcMain.handle(
+  'git-switch-branch',
+  async (
+    event,
+    folderPath: string,
+    branchName: string,
+    force: boolean = false,
+  ) => {
+    try {
+      console.log('🔄 Switching to branch:', branchName, { force });
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // Check if there are uncommitted changes
+      const { stdout: statusOutput } = await execAsync(
+        'git status --porcelain',
+        {
+          cwd: folderPath,
+        },
+      );
+
+      if (statusOutput.trim() && !force) {
+        // Return detailed error information for uncommitted changes
+        const hasUncommittedChanges = {
+          type: 'uncommitted_changes',
+          message: 'Cannot switch branches with uncommitted changes',
+          hasChanges: true,
+          targetBranch: branchName,
+          options: [
+            {
+              id: 'stash',
+              title: 'Stash Changes',
+              description: 'Save changes temporarily and switch branch',
+            },
+            {
+              id: 'force',
+              title: 'Discard Changes',
+              description:
+                'Discard all changes and switch branch (destructive)',
+            },
+            {
+              id: 'cancel',
+              title: 'Cancel',
+              description: 'Stay on current branch',
+            },
+          ],
+        };
+
+        return { success: false, error: hasUncommittedChanges };
+      }
+
+      // Switch to the branch
+      const checkoutFlag = force ? '-f' : '';
+      await execAsync(`git checkout ${checkoutFlag} "${branchName}"`, {
+        cwd: folderPath,
+      });
+
+      console.log('✅ Successfully switched to branch:', branchName);
+      return { success: true, branchName };
+    } catch (error) {
+      console.error('❌ Error switching branch:', error);
+      throw new Error(
+        `Failed to switch branch: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
+
+ipcMain.handle(
+  'git-create-branch',
+  async (
+    event,
+    folderPath: string,
+    branchName: string,
+    switchToBranch: boolean = true,
+  ) => {
+    try {
+      console.log('🌱 Creating new branch:', branchName);
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // Validate branch name
+      if (!branchName || !branchName.trim()) {
+        throw new Error('Branch name cannot be empty');
+      }
+
+      const sanitizedBranchName = branchName.trim();
+
+      // Check if branch already exists
+      try {
+        await execAsync(
+          `git show-ref --verify --quiet refs/heads/${sanitizedBranchName}`,
+          {
+            cwd: folderPath,
+          },
+        );
+
+        // Branch exists, return structured error instead of throwing
+        return {
+          success: false,
+          error: {
+            type: 'branch_already_exists',
+            branchName: sanitizedBranchName,
+            message: `A branch named '${sanitizedBranchName}' already exists`,
+            suggestion:
+              'Try using a different branch name or switch to the existing branch.',
+          },
+        };
+      } catch (error) {
+        // Branch doesn't exist, which is what we want for creation
+      }
+
+      if (switchToBranch) {
+        // Create and switch to the new branch (uncommitted changes will follow)
+        await execAsync(`git checkout -b "${sanitizedBranchName}"`, {
+          cwd: folderPath,
+        });
+      } else {
+        // Just create the branch without switching
+        await execAsync(`git branch "${sanitizedBranchName}"`, {
+          cwd: folderPath,
+        });
+      }
+
+      console.log(
+        `✅ Successfully created branch: ${sanitizedBranchName} (switched: ${switchToBranch})`,
+      );
+      return {
+        success: true,
+        branchName: sanitizedBranchName,
+        switched: switchToBranch,
+      };
+    } catch (error: any) {
+      console.error('❌ Error creating branch:', error);
+
+      // Check if this is a "branch already exists" error from git command
+      if (error.stderr && error.stderr.includes('already exists')) {
+        return {
+          success: false,
+          error: {
+            type: 'branch_already_exists',
+            branchName: branchName.trim(),
+            message: `A branch named '${branchName.trim()}' already exists`,
+            suggestion:
+              'Try using a different branch name or switch to the existing branch.',
+          },
+        };
+      }
+
+      throw new Error(
+        `Failed to create branch: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    }
+  },
+);
+
+ipcMain.handle(
+  'git-delete-branch',
+  async (
+    event,
+    folderPath: string,
+    branchName: string,
+    force: boolean = false,
+  ) => {
+    try {
+      console.log('🗑️ Deleting branch:', branchName);
+
+      // Check if it's a Git repository
+      const isRepo = await isGitRepository(folderPath);
+      if (!isRepo) {
+        throw new Error('Not a Git repository');
+      }
+
+      // Get current branch to prevent deleting it
+      const { stdout: currentBranchOutput } = await execAsync(
+        'git branch --show-current',
+        { cwd: folderPath },
+      );
+      const currentBranch = currentBranchOutput.trim();
+
+      if (currentBranch === branchName) {
+        throw new Error('Cannot delete the currently checked out branch');
+      }
+
+      // Delete the branch
+      const deleteFlag = force ? '-D' : '-d';
+      await execAsync(`git branch ${deleteFlag} "${branchName}"`, {
+        cwd: folderPath,
+      });
+
+      console.log(`✅ Successfully deleted branch: ${branchName}`);
+      return { success: true, branchName };
+    } catch (error) {
+      console.error('❌ Error deleting branch:', error);
+      throw new Error(
+        `Failed to delete branch: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );

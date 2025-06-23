@@ -19,10 +19,25 @@ export interface GitBranchInfo {
   behind: number;
 }
 
+export interface GitBranch {
+  name: string;
+  fullName: string;
+  isCurrent: boolean;
+  isRemote: boolean;
+  canCheckout: boolean;
+}
+
 export interface DialogState {
   open: boolean;
   filePath?: string;
   errorInfo?: any;
+}
+
+export interface BranchDialogState {
+  open: boolean;
+  type: 'switch' | 'create' | 'delete' | null;
+  branches?: GitBranch[];
+  selectedBranch?: string;
 }
 
 export interface ExpandedSections {
