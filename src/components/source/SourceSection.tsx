@@ -12,6 +12,8 @@ import { BranchInfo } from './BranchInfo';
 import { FileList } from './FileList';
 import { CommitSection } from './CommitSection';
 import { Dialogs } from './Dialogs';
+import { BranchDialog } from './BranchDialog';
+import { UncommittedChangesDialog } from './UncommittedChangesDialog';
 import {
   SourceContainer,
   ActionButtonsContainer,
@@ -26,6 +28,8 @@ import {
   DialogState,
   ExpandedSections,
   GitFileStatus,
+  GitBranch,
+  BranchDialogState,
 } from './types';
 
 export const SourceSection = memo(() => {
@@ -48,6 +52,19 @@ export const SourceSection = memo(() => {
   const [pullDialog, setPullDialog] = useState<DialogState>({
     open: false,
     errorInfo: null,
+  });
+  const [branchDialog, setBranchDialog] = useState<BranchDialogState>({
+    open: false,
+    type: null,
+    branches: [],
+    selectedBranch: '',
+  });
+  const [uncommittedChangesDialog, setUncommittedChangesDialog] = useState<{
+    open: boolean;
+    targetBranch: string;
+  }>({
+    open: false,
+    targetBranch: '',
   });
 
   // Get folder info from Redux
@@ -293,6 +310,153 @@ export const SourceSection = memo(() => {
     [folderPath, loadGitStatus],
   );
 
+  // Branch operation handlers
+  const handleBranchDialogOpen = useCallback(
+    async (type: 'switch' | 'create' | 'delete') => {
+      if (!folderPath) return;
+
+      try {
+        // Load branches for switch/delete operations
+        if (type === 'switch' || type === 'delete') {
+          const result = await window.electron.gitListBranches(folderPath);
+          setBranchDialog({
+            open: true,
+            type,
+            branches: result.branches,
+            selectedBranch: '',
+          });
+        } else {
+          setBranchDialog({
+            open: true,
+            type,
+            branches: [],
+            selectedBranch: '',
+          });
+        }
+      } catch (error) {
+        console.error('Error loading branches:', error);
+      }
+    },
+    [folderPath],
+  );
+
+  const handleBranchDialogClose = useCallback(() => {
+    setBranchDialog({
+      open: false,
+      type: null,
+      branches: [],
+      selectedBranch: '',
+    });
+  }, []);
+
+  const handleSwitchBranch = useCallback(
+    async (branchName: string, force: boolean = false) => {
+      if (!folderPath) return;
+
+      try {
+        const result = await window.electron.gitSwitchBranch(
+          folderPath,
+          branchName,
+          force,
+        );
+
+        // If the switch failed due to uncommitted changes, show the dialog
+        if (!result.success && result.error?.type === 'uncommitted_changes') {
+          setUncommittedChangesDialog({
+            open: true,
+            targetBranch: branchName,
+          });
+          return;
+        }
+
+        await loadGitStatus();
+      } catch (error) {
+        console.error('Error switching branch:', error);
+        throw error;
+      }
+    },
+    [folderPath, loadGitStatus],
+  );
+
+  const handleCreateBranch = useCallback(
+    async (branchName: string, switchToBranch: boolean) => {
+      if (!folderPath) return;
+
+      try {
+        const result = await window.electron.gitCreateBranch(
+          folderPath,
+          branchName,
+          switchToBranch,
+        );
+
+        // If successful, refresh Git status
+        if (result.success) {
+          await loadGitStatus();
+        }
+
+        // Return the result so BranchDialog can handle errors
+        return result;
+      } catch (error) {
+        console.error('Error creating branch:', error);
+        throw error;
+      }
+    },
+    [folderPath, loadGitStatus],
+  );
+
+  const handleDeleteBranch = useCallback(
+    async (branchName: string, force: boolean) => {
+      if (!folderPath) return;
+
+      try {
+        await window.electron.gitDeleteBranch(folderPath, branchName, force);
+        await loadGitStatus();
+      } catch (error) {
+        console.error('Error deleting branch:', error);
+        throw error;
+      }
+    },
+    [folderPath, loadGitStatus],
+  );
+
+  // Uncommitted changes dialog handlers
+  const handleUncommittedChangesDialogClose = useCallback(() => {
+    setUncommittedChangesDialog({
+      open: false,
+      targetBranch: '',
+    });
+  }, []);
+
+  const handleStashAndSwitch = useCallback(
+    async (stashMessage?: string) => {
+      if (!folderPath || !uncommittedChangesDialog.targetBranch) return;
+
+      try {
+        await window.electron.gitStashAndSwitch(
+          folderPath,
+          uncommittedChangesDialog.targetBranch,
+          stashMessage,
+        );
+        await loadGitStatus();
+      } catch (error) {
+        console.error('Error stashing and switching branch:', error);
+        throw error;
+      }
+    },
+    [folderPath, uncommittedChangesDialog.targetBranch, loadGitStatus],
+  );
+
+  const handleForceSwitch = useCallback(async () => {
+    if (!folderPath || !uncommittedChangesDialog.targetBranch) return;
+
+    try {
+      await handleSwitchBranch(uncommittedChangesDialog.targetBranch, true);
+    } catch (error) {
+      console.error('Error force switching branch:', error);
+      throw error;
+    }
+  }, [folderPath, uncommittedChangesDialog.targetBranch, handleSwitchBranch]);
+
   // Handle file click to open in editor
   const handleFileClick = useCallback(
     async (file: GitFileStatus) => {
@@ -413,7 +577,13 @@ export const SourceSection = memo(() => {
     <SourceContainer>
       {/* Branch Information */}
       {branchInfo && (
-        <BranchInfo branchInfo={branchInfo} onRefresh={loadGitStatus} />
+        <BranchInfo
+          branchInfo={branchInfo}
+          onRefresh={loadGitStatus}
+          onSwitchBranch={() => handleBranchDialogOpen('switch')}
+          onCreateBranch={() => handleBranchDialogOpen('create')}
+          onDeleteBranch={() => handleBranchDialogOpen('delete')}
+        />
       )}
 
       {/* Action Buttons */}
@@ -505,6 +675,24 @@ export const SourceSection = memo(() => {
         onDeleteFileConfirm={handleDeleteFileConfirm}
         onPullDialogClose={handlePullDialogClose}
         onPullStrategy={handlePullStrategy}
+      />
+
+      {/* Branch Dialog */}
+      <BranchDialog
+        dialogState={branchDialog}
+        onClose={handleBranchDialogClose}
+        onSwitchBranch={handleSwitchBranch}
+        onCreateBranch={handleCreateBranch}
+        onDeleteBranch={handleDeleteBranch}
+      />
+
+      {/* Uncommitted Changes Dialog */}
+      <UncommittedChangesDialog
+        open={uncommittedChangesDialog.open}
+        targetBranch={uncommittedChangesDialog.targetBranch}
+        onClose={handleUncommittedChangesDialogClose}
+        onStashAndSwitch={handleStashAndSwitch}
+        onForceSwitch={handleForceSwitch}
       />
     </SourceContainer>
   );

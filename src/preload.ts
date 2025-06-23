@@ -479,6 +479,102 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+
+  // Git branch operations
+  gitListBranches: async (folderPath: string) => {
+    try {
+      const result = await ipcRenderer.invoke('git-list-branches', folderPath);
+      return result;
+    } catch (error) {
+      console.error('Error in gitListBranches preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitSwitchBranch: async (
+    folderPath: string,
+    branchName: string,
+    force?: boolean,
+  ) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-switch-branch',
+        folderPath,
+        branchName,
+        force,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitSwitchBranch preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitCreateBranch: async (
+    folderPath: string,
+    branchName: string,
+    switchToBranch: boolean = true,
+  ) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-create-branch',
+        folderPath,
+        branchName,
+        switchToBranch,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitCreateBranch preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitDeleteBranch: async (
+    folderPath: string,
+    branchName: string,
+    force: boolean = false,
+  ) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-delete-branch',
+        folderPath,
+        branchName,
+        force,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitDeleteBranch preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitStashChanges: async (folderPath: string, message?: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-stash-changes',
+        folderPath,
+        message,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitStashChanges preload:', error);
+      throw normalizeError(error);
+    }
+  },
+  gitStashAndSwitch: async (
+    folderPath: string,
+    branchName: string,
+    stashMessage?: string,
+  ) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-stash-and-switch',
+        folderPath,
+        branchName,
+        stashMessage,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitStashAndSwitch preload:', error);
+      throw normalizeError(error);
+    }
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);
