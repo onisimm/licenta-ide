@@ -338,7 +338,7 @@ export const QuickFileOpener: React.FC<QuickFileOpenerProps> = ({
           <TextField
             id="file-search-input"
             fullWidth
-            placeholder="Type to search files (supports regex)..."
+            placeholder="Type to search files..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
