@@ -195,6 +195,28 @@ export const SourceSection = memo(() => {
     }
   }, [folderPath, loadGitStatus]);
 
+  // Push branch to origin (for branches without upstream tracking)
+  const handlePushBranchToOrigin = useCallback(async () => {
+    if (!folderPath) return;
+
+    try {
+      const result = await window.electron.gitPushBranchToOrigin(folderPath);
+
+      if (result.success) {
+        console.log(
+          `✅ Branch '${result.branchName}' pushed to origin successfully`,
+        );
+        if (result.createdUpstream) {
+          console.log('📍 Upstream tracking set up');
+        }
+        await loadGitStatus();
+      }
+    } catch (error) {
+      console.error('Error pushing branch to origin:', error);
+      // You could add a toast notification or error dialog here
+    }
+  }, [folderPath, loadGitStatus]);
+
   // Toggle section expansion
   const toggleSection = useCallback((section: 'changes' | 'staged') => {
     setExpandedSections(prev => ({
@@ -606,6 +628,26 @@ export const SourceSection = memo(() => {
             onClick={handlePush}
             fullWidth>
             Push
+          </Button>
+        )}
+        {branchInfo && !branchInfo.existsOnOrigin && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PushIcon />}
+            onClick={handlePushBranchToOrigin}
+            fullWidth>
+            Push to Origin
+          </Button>
+        )}
+        {branchInfo && branchInfo.existsOnOrigin && !branchInfo.hasUpstream && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PushIcon />}
+            onClick={handlePushBranchToOrigin}
+            fullWidth>
+            Set Upstream
           </Button>
         )}
       </ActionButtonsContainer>

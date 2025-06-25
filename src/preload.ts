@@ -575,6 +575,19 @@ const renderer = {
       throw normalizeError(error);
     }
   },
+  gitPushBranchToOrigin: async (folderPath: string, branchName?: string) => {
+    try {
+      const result = await ipcRenderer.invoke(
+        'git-push-branch-to-origin',
+        folderPath,
+        branchName,
+      );
+      return result;
+    } catch (error) {
+      console.error('Error in gitPushBranchToOrigin preload:', error);
+      throw normalizeError(error);
+    }
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', renderer);
