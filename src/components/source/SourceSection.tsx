@@ -630,7 +630,7 @@ export const SourceSection = memo(() => {
             Push
           </Button>
         )}
-        {branchInfo && !branchInfo.existsOnOrigin && (
+        {branchInfo && !branchInfo.hasUpstream && (
           <Button
             variant="outlined"
             size="small"
@@ -638,16 +638,6 @@ export const SourceSection = memo(() => {
             onClick={handlePushBranchToOrigin}
             fullWidth>
             Push to Origin
-          </Button>
-        )}
-        {branchInfo && branchInfo.existsOnOrigin && !branchInfo.hasUpstream && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<PushIcon />}
-            onClick={handlePushBranchToOrigin}
-            fullWidth>
-            Set Upstream
           </Button>
         )}
       </ActionButtonsContainer>

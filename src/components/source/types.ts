@@ -18,7 +18,6 @@ export interface GitBranchInfo {
   ahead: number;
   behind: number;
   hasUpstream: boolean;
-  existsOnOrigin: boolean;
 }
 
 export interface GitBranch {
