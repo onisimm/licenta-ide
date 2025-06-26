@@ -35,28 +35,28 @@ export const OPENAI_MODELS: Record<string, AIModel> = {
     name: 'GPT-4',
     description: 'Most capable model, best for complex tasks',
     maxTokens: 4000,
-    temperature: 0.7,
+    temperature: 0.5,
   },
   'gpt-4o-mini': {
     id: 'gpt-4o-mini',
     name: 'GPT-4o Mini',
     description: 'Fast, affordable small model for focused tasks',
     maxTokens: 2000,
-    temperature: 0.7,
+    temperature: 0.5,
   },
   'gpt-4.1-mini': {
     id: 'gpt-4.1-mini',
     name: 'GPT-4.1 Mini',
     description: 'Balanced for intelligence, speed, and cost',
     maxTokens: 2000,
-    temperature: 0.7,
+    temperature: 0.4,
   },
   'gpt-4.1': {
     id: 'gpt-4.1',
     name: 'GPT-4.1',
     description: 'Flagship GPT model for complex tasks',
     maxTokens: 4000,
-    temperature: 0.7,
+    temperature: 0.2,
   },
 };
 
